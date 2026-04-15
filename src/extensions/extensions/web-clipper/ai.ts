@@ -119,10 +119,12 @@ export default class AiExtension extends ToolExtension<any> {
                 type: 'string',
                 title: 'Model',
                 'x-decorator': 'FormItem',
-                'x-component': 'Input',
-                'x-component-props': {
-                  placeholder: 'gpt-4o-mini',
-                },
+                'x-component': 'AiModelSelect',
+              },
+              testConnection: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'AiTestButton',
               },
               mode: {
                 type: 'string',
