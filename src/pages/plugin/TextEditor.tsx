@@ -35,6 +35,8 @@ const editorId = 'DiamondYuan_Love_LJ';
 
 class ClipperPluginPage extends React.Component<PageProps, { markdown: string }> {
   private myCodeMirror: any;
+  /** 标志位：setValue 期间屏蔽 change 事件回写 Redux，防止无限循环 */
+  private isSettingValue = false;
 
   constructor(props: any) {
     super(props);
@@ -78,14 +80,7 @@ class ClipperPluginPage extends React.Component<PageProps, { markdown: string }>
     return data || '';
   };
 
-  componentDidUpdate = (prevProps: PageProps) => {
-    // 仅在 clipperData 或 search 变化时才执行，防止无限循环
-    if (
-      prevProps.clipperData === this.props.clipperData &&
-      prevProps.search === this.props.search
-    ) {
-      return;
-    }
+  componentDidUpdate = () => {
     const data = this.checkExtension();
     if (this.myCodeMirror) {
       const value = this.myCodeMirror.getValue();
@@ -93,11 +88,16 @@ class ClipperPluginPage extends React.Component<PageProps, { markdown: string }>
         try {
           const that = this;
           setTimeout(() => {
+            // 设置标志位，屏蔽 change 事件回写 Redux，打破循环
+            that.isSettingValue = true;
             that.myCodeMirror.setValue(data);
+            that.isSettingValue = false;
             that.myCodeMirror.focus();
             that.myCodeMirror.setCursor(that.myCodeMirror.lineCount(), 0);
           }, 10);
-        } catch (_error) {}
+        } catch (_error) {
+          this.isSettingValue = false;
+        }
       }
     }
   };
@@ -116,6 +116,10 @@ class ClipperPluginPage extends React.Component<PageProps, { markdown: string }>
       }
     }
     this.myCodeMirror.on('change', (editor: any) => {
+      // setValue 触发的 change 事件不回写 Redux，防止无限循环
+      if (this.isSettingValue) {
+        return;
+      }
       this.props.changeData({
         data: editor.getValue(),
         pathName: this.props.pathname,
