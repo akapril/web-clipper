@@ -33,8 +33,22 @@ export default class ObsidianService implements DocumentService {
     }));
   };
 
+  /**
+   * 清理文件名中的非法字符
+   * Obsidian 使用文件系统存储，标题中的特殊字符会导致路径异常
+   */
+  private sanitizeTitle(title: string): string {
+    // 替换路径分隔符和文件系统非法字符为短横线
+    return title
+      .replace(/[\/\\:*?"<>|]/g, '-')
+      .replace(/-{2,}/g, '-')
+      .replace(/^-|-$/g, '')
+      .trim() || 'Untitled';
+  }
+
   createDocument = async (info: ObsidianCreateDocumentRequest) => {
-    const file = `${info.repositoryId}/${info.title}`;
+    const safeTitle = this.sanitizeTitle(info.title);
+    const file = `${info.repositoryId}/${safeTitle}`;
     const content = this.renderContent(info);
     const mode = this.config.connectionMode || 'uri';
 

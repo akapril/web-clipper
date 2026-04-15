@@ -64,6 +64,28 @@ describe('ObsidianService', () => {
     expect(url).toContain('vault=TestVault');
   });
 
+  test('标题中的特殊字符被清理', async () => {
+    const service = new ObsidianService(baseConfig);
+    await service.createDocument({
+      ...baseRequest,
+      title: 'foo/bar\\baz:qux*test?"<>|end',
+    });
+    const url = mockWindowOpen.mock.calls[0][0] as string;
+    // 所有非法字符替换为短横线，不应包含路径分隔符
+    expect(url).not.toContain('file=Clippings%2Ffoo%2F');
+    expect(url).toContain('foo-bar-baz-qux-test-end');
+  });
+
+  test('纯特殊字符标题回退为 Untitled', async () => {
+    const service = new ObsidianService(baseConfig);
+    await service.createDocument({
+      ...baseRequest,
+      title: '///???',
+    });
+    const url = mockWindowOpen.mock.calls[0][0] as string;
+    expect(url).toContain('Untitled');
+  });
+
   test('REST 模式调用 fetch PUT', async () => {
     mockFetch.mockResolvedValueOnce({ ok: true });
     const config: ObsidianFormConfig = {
