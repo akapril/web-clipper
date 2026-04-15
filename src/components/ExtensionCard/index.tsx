@@ -4,7 +4,7 @@ import { FormattedMessage } from 'react-intl';
 import { SerializedExtensionInfo } from '@/extensions/common';
 import IconFont from '@/components/IconFont';
 import { SettingOutlined } from '@ant-design/icons';
-import { Form, FormItem, Input as FormInput } from '@formily/antd';
+import { Form, FormItem, Input as FormInput, Select as FormSelect } from '@formily/antd';
 import { createForm, onFormValuesChange } from '@formily/core';
 import { createSchemaField, useForm } from '@formily/react';
 import { toJS } from 'mobx';
@@ -147,6 +147,8 @@ const AiTestButton: React.FC = () => {
 const SchemaField = createSchemaField({
   components: {
     FormItem,
+    Input: FormInput,
+    Select: FormSelect,
     textarea: FormInput.TextArea!,
     clipExtensionsSelect: ExtensionSelect,
     AiModelSelect,
