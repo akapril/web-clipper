@@ -29,7 +29,13 @@ class ChromeTabService extends AbstractTabService {
   }
 
   sendMessage<T>(tabId: number, message: any): Promise<T> {
-    return browser.tabs.sendMessage<T>(tabId, message);
+    return browser.tabs.sendMessage<T>(tabId, message).catch((error) => {
+      // popup 关闭后 content script 连接断开，忽略此错误
+      if (error?.message?.includes('Receiving end does not exist')) {
+        return undefined as any;
+      }
+      throw error;
+    });
   }
 
   create(createProperties: chrome.tabs.CreateProperties): Promise<chrome.tabs.Tab> {
