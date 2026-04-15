@@ -250,20 +250,38 @@ const model = new DvaModelBuilder(defaultState, 'clipper')
     if (!createDocumentRequest) {
       return;
     }
-    const response: CompleteStatus = yield call(
-      backend.getDocumentService()!.createDocument,
-      createDocumentRequest
-    );
-    yield put(
-      asyncCreateDocument.done({
-        params: { pathname },
-        result: {
-          result: response,
-          request: createDocumentRequest,
-        },
-      })
-    );
-    yield put(routerRedux.push('/complete'));
+    try {
+      const response: CompleteStatus = yield call(
+        backend.getDocumentService()!.createDocument,
+        createDocumentRequest
+      );
+      yield put(
+        asyncCreateDocument.done({
+          params: { pathname },
+          result: {
+            result: response,
+            request: createDocumentRequest,
+          },
+        })
+      );
+      notification.success({
+        message: '保存成功',
+        duration: 3,
+      });
+      yield put(routerRedux.push('/complete'));
+    } catch (error: any) {
+      yield put(
+        asyncCreateDocument.failed({
+          params: { pathname },
+          error,
+        })
+      );
+      notification.error({
+        message: '保存失败',
+        description: error?.message || '未知错误',
+        duration: 5,
+      });
+    }
   })
   .case(
     asyncChangeAccount.done,

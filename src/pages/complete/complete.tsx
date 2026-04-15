@@ -48,15 +48,23 @@ const Page: React.FC = () => {
     <ToolContainer onClickCloseButton={closeTool} onClickMask={closeTool}>
       <Section title={<FormattedMessage id="page.complete.success" defaultMessage="Success" />}>
         {completeStatus?.href ? (
-          <a href={completeStatus.href} target="_blank">
-            <Button className={styles.jump} size="large" type="primary" block>
-              <FormattedMessage
-                id="page.complete.message"
-                defaultMessage="Go to {name}"
-                values={{ name: <span>{name}</span> }}
-              />
-            </Button>
-          </a>
+          <Button
+            className={styles.jump}
+            size="large"
+            type="primary"
+            block
+            onClick={() => {
+              // 自定义协议（obsidian://, bear:// 等）用 window.open 打开
+              // 普通 http(s) 链接也兼容
+              window.open(completeStatus!.href);
+            }}
+          >
+            <FormattedMessage
+              id="page.complete.message"
+              defaultMessage="Go to {name}"
+              values={{ name: <span>{name}</span> }}
+            />
+          </Button>
         ) : (
           <Button className={styles.jump} size="large" type="primary" block onClick={closeTool}>
             <FormattedMessage id="page.complete.close" defaultMessage="Close Web Clipper" />
