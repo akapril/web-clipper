@@ -60,17 +60,44 @@ async function callAiApi(
   return data.choices?.[0]?.message?.content?.trim() || '';
 }
 
+/** AI 生成内容的标记，用于识别和替换 */
+const AI_BLOCK_START = '<!-- AI_GENERATED_START -->';
+const AI_BLOCK_END = '<!-- AI_GENERATED_END -->';
+
+/**
+ * 移除内容中已有的 AI 生成块
+ */
+function stripAiBlock(content: string): string {
+  const regex = new RegExp(
+    `\\n*---\\n*\\n*${AI_BLOCK_START}[\\s\\S]*?${AI_BLOCK_END}\\n*---\\n*`,
+    'g'
+  );
+  return content.replace(regex, '').trim();
+}
+
+/**
+ * 包裹 AI 生成内容
+ */
+function wrapAiBlock(aiResult: string): string {
+  return `${AI_BLOCK_START}\n${aiResult}\n${AI_BLOCK_END}`;
+}
+
 /**
  * 根据输出模式合并 AI 结果和原始内容
+ * 再次执行时自动替换上一次的 AI 生成内容
  */
 function mergeContent(original: string, aiResult: string, outputMode: OutputMode): string {
+  // 先移除旧的 AI 生成块，还原原始内容
+  const cleanOriginal = stripAiBlock(original);
+  const wrappedResult = wrapAiBlock(aiResult);
+
   switch (outputMode) {
     case 'replace':
       return aiResult;
     case 'prepend':
-      return `${aiResult}\n\n---\n\n${original}`;
+      return `---\n${wrappedResult}\n---\n\n${cleanOriginal}`;
     case 'append':
-      return `${original}\n\n---\n\n${aiResult}`;
+      return `${cleanOriginal}\n\n---\n${wrappedResult}\n---`;
     default:
       return aiResult;
   }
