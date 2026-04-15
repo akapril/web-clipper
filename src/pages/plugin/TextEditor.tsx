@@ -35,8 +35,12 @@ const editorId = 'DiamondYuan_Love_LJ';
 
 class ClipperPluginPage extends React.Component<PageProps, { markdown: string }> {
   private myCodeMirror: any;
-  /** 标志位：setValue 期间屏蔽 change 事件回写 Redux，防止无限循环 */
+  /** 屏蔽 setValue 触发的 change 事件回写 Redux */
   private isSettingValue = false;
+  /** 防止 asyncRunExtension 重复派发 */
+  private extensionDispatched = false;
+  /** 记录上一次同步到编辑器的数据，防止重复 setValue */
+  private lastSyncedData = '';
 
   constructor(props: any) {
     super(props);
@@ -48,56 +52,68 @@ class ClipperPluginPage extends React.Component<PageProps, { markdown: string }>
   checkExtension = () => {
     const { extension, clipperData, pathname, search } = this.props;
     const data = clipperData[pathname];
-    if (isUndefined(data) && extension) {
+
+    // 仅在数据为空且未派发过时，触发扩展运行
+    if (isUndefined(data) && extension && !this.extensionDispatched) {
+      this.extensionDispatched = true;
       this.props.asyncRunExtension({
         pathname,
         extension,
       });
     }
+
     if (isUndefined(data) && search) {
       const content = parse(search.slice(1));
-      this.props.changeData({
-        data: content.markdown || '',
-        pathName: this.props.pathname,
-      });
-      this.setState({
-        markdown: (content.markdown as string) || '',
-      });
-      return content.markdown || '';
+      const md = (content.markdown as string) || '';
+      // 仅在内容变化时更新，防止循环
+      if (md !== this.state.markdown) {
+        this.setState({ markdown: md });
+        this.props.changeData({
+          data: md,
+          pathName: this.props.pathname,
+        });
+      }
+      return md;
     }
+
     if (search && !isUndefined(data)) {
       const content = parse(search.slice(1));
-      if (content.markdown !== this.state.markdown) {
-        this.setState({
-          markdown: (content.markdown as string) || '',
-        });
+      const md = (content.markdown as string) || '';
+      if (md !== this.state.markdown) {
+        this.setState({ markdown: md });
         this.props.changeData({
-          data: (content.markdown as string) || '',
+          data: md,
           pathName: this.props.pathname,
         });
       }
     }
+
     return data || '';
   };
 
   componentDidUpdate = () => {
     const data = this.checkExtension();
-    if (this.myCodeMirror) {
-      const value = this.myCodeMirror.getValue();
-      if (data !== value) {
-        try {
-          const that = this;
-          setTimeout(() => {
-            // 设置标志位，屏蔽 change 事件回写 Redux，打破循环
-            that.isSettingValue = true;
-            that.myCodeMirror.setValue(data);
-            that.isSettingValue = false;
-            that.myCodeMirror.focus();
-            that.myCodeMirror.setCursor(that.myCodeMirror.lineCount(), 0);
-          }, 10);
-        } catch (_error) {
-          this.isSettingValue = false;
-        }
+    if (!this.myCodeMirror) {
+      return;
+    }
+    // 仅在数据真正变化时同步到编辑器
+    if (data === this.lastSyncedData) {
+      return;
+    }
+    const value = this.myCodeMirror.getValue();
+    if (data !== value) {
+      this.lastSyncedData = data;
+      try {
+        const that = this;
+        setTimeout(() => {
+          that.isSettingValue = true;
+          that.myCodeMirror.setValue(data);
+          that.isSettingValue = false;
+          that.myCodeMirror.focus();
+          that.myCodeMirror.setCursor(that.myCodeMirror.lineCount(), 0);
+        }, 10);
+      } catch (_error) {
+        this.isSettingValue = false;
       }
     }
   };
@@ -113,15 +129,17 @@ class ClipperPluginPage extends React.Component<PageProps, { markdown: string }>
       const value = this.myCodeMirror.getValue();
       if (data !== value) {
         this.myCodeMirror.setValue(data);
+        this.lastSyncedData = data;
       }
     }
     this.myCodeMirror.on('change', (editor: any) => {
-      // setValue 触发的 change 事件不回写 Redux，防止无限循环
       if (this.isSettingValue) {
         return;
       }
+      const newValue = editor.getValue();
+      this.lastSyncedData = newValue;
       this.props.changeData({
-        data: editor.getValue(),
+        data: newValue,
         pathName: this.props.pathname,
       });
     });
