@@ -82,7 +82,7 @@ export default class AiExtension extends ToolExtension<any> {
       {
         extensionId: 'ai',
         name: 'AI Processing',
-        icon: 'magic',
+        icon: 'thunderbolt',
         version: '1.0.0',
         description: 'AI-powered content processing: summary, translation, tags, formatting',
         automatic: true,
