@@ -5,18 +5,18 @@ export default new TextExtension<SelectAreaPosition>(
   {
     name: 'Screenshots',
     icon: 'picture',
-    version: '0.0.1',
+    version: '0.0.2',
 		i18nManifest: {
 			'de-DE': { name: 'Screenshots', description: 'Speichern Sie den aktuellen Inhalt als Bild.' },
 			'en-US': { name: 'Screenshots', description: 'Save current clipping content as an image.' },
 			'ja-JP': { name: 'スクリーンショット', description: '現在のクリップ内容を画像として保存します。' },
 			'ko-KR': { name: '스크린샷', description: '현재 클립 내용을 이미지로 저장합니다.' },
 			'ru-RU': { name: 'Скриншоты', description: 'Сохранить текущее содержимое как изображение.' },
-			'zh-CN': { name: '截图', description: '将当前剪藏内容保存为图片' }, // 保留简体中文
+			'zh-CN': { name: '截图', description: '将当前剪藏内容保存为图片' },
 		}
 	},
   {
-    init: ({ currentImageHostingService }) => !!currentImageHostingService,
+    // 移除图床依赖检查，无图床时使用 data URL 内联
     run: async context => {
       const { AreaSelector, toggleClipper, toggleLoading } = context;
       toggleClipper();
@@ -53,10 +53,19 @@ export default new TextExtension<SelectAreaPosition>(
       canvas.height = sheight;
       canvas.width = swidth;
       ctx!.drawImage(img, sx, sy, swidth, sheight, 0, 0, swidth, sheight);
-      const url = await imageService!.uploadImage({
-        data: canvas.toDataURL(),
-      });
-      return `![](${url})\n\n`;
+      const dataUrl = canvas.toDataURL();
+
+      // 有图床时上传，无图床时用 data URL 内联
+      if (imageService) {
+        try {
+          const url = await imageService.uploadImage({ data: dataUrl });
+          return `![](${url})\n\n`;
+        } catch (_e) {
+          // 上传失败时回退到 data URL
+          return `![screenshot](${dataUrl})\n\n`;
+        }
+      }
+      return `![screenshot](${dataUrl})\n\n`;
     },
     destroy: async context => {
       const { toggleClipper, toggleLoading } = context;
