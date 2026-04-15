@@ -78,7 +78,14 @@ class ClipperPluginPage extends React.Component<PageProps, { markdown: string }>
     return data || '';
   };
 
-  componentDidUpdate = () => {
+  componentDidUpdate = (prevProps: PageProps) => {
+    // 仅在 clipperData 或 search 变化时才执行，防止无限循环
+    if (
+      prevProps.clipperData === this.props.clipperData &&
+      prevProps.search === this.props.search
+    ) {
+      return;
+    }
     const data = this.checkExtension();
     if (this.myCodeMirror) {
       const value = this.myCodeMirror.getValue();
