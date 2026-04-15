@@ -12,6 +12,8 @@ export interface IContentScriptService {
   runScript(id: string, lifeCycle: 'run' | 'destroy'): Promise<void>;
   getSelectionMarkdown(): Promise<string>;
   getPageUrl(): Promise<string>;
+  /** 滚动页面到指定位置 */
+  scrollPage(x: number, y: number): Promise<void>;
 }
 
 export const IContentScriptService = new Token<IContentScriptService>('IContentScriptService');

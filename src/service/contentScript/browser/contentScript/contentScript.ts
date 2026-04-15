@@ -82,6 +82,12 @@ class ContentScriptService implements IContentScriptService {
     }
   }
 
+  async scrollPage(x: number, y: number) {
+    window.scrollTo(x, y);
+    // 等待滚动和懒加载内容渲染
+    await new Promise(r => setTimeout(r, 350));
+  }
+
   async runScript(id: string, lifeCycle: 'run' | 'destroy') {
     const extensions = this.extensionContainer.extensions;
     const extension = extensions.find((o) => o.id === id);

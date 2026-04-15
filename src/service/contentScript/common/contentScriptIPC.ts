@@ -26,6 +26,9 @@ export class ContentScriptChannel implements IServerChannel {
       case 'runScript': {
         return this.service.runScript(arg[0], arg[1]);
       }
+      case 'scrollPage': {
+        return this.service.scrollPage(arg[0], arg[1]);
+      }
       default: {
         throw new Error(`Call not found: ${command}`);
       }
@@ -58,5 +61,8 @@ export class ContentScriptChannelClient implements IContentScriptService {
   };
   getPageUrl = async (): Promise<string> => {
     return this.channel.call('getPageUrl');
+  };
+  scrollPage = async (x: number, y: number): Promise<void> => {
+    return this.channel.call('scrollPage', [x, y]);
   };
 }
