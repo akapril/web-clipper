@@ -209,6 +209,17 @@ export default class AiExtension extends ToolExtension<any> {
           const systemPrompt = config.customPrompt?.trim()
             || PROMPTS[config.mode](config);
 
+          const MODE_LABELS: Record<AiMode, string> = {
+            summary: '摘要生成',
+            translate: '翻译',
+            tags: '标签提取',
+            format: '格式优化',
+          };
+          const modeLabel = MODE_LABELS[config.mode] || 'AI 处理';
+
+          // 显示加载状态
+          const hideLoading = context.message.loading(`${modeLabel}中，请稍候...`, 0);
+
           try {
             const aiResult = await callAiApi(
               config.apiBase,
@@ -218,14 +229,18 @@ export default class AiExtension extends ToolExtension<any> {
               context.data
             );
 
+            hideLoading();
+
             if (!aiResult) {
               context.message.error('AI 返回内容为空');
               return context.data;
             }
 
+            context.message.success(`${modeLabel}完成`);
             return mergeContent(context.data, aiResult, config.outputMode);
           } catch (error: any) {
-            context.message.error(`AI 处理失败: ${error.message}`);
+            hideLoading();
+            context.message.error(`${modeLabel}失败: ${error.message}`);
             return context.data;
           }
         },
