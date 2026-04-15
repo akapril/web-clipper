@@ -222,5 +222,7 @@
   "tool.saveButton.noRepository": "请选择你要保存的知识库",
   "tool.title": "笔记标题",
   "tool.title.required": "请输入笔记标题",
-  "tool.toolExtensions": "工具扩展"
+  "tool.toolExtensions": "工具扩展",
+  "backend.imageHosting.obsidian.name": "Obsidian",
+  "backend.imageHosting.obsidian.builtInRemark": "Obsidian REST API 内置图床"
 }

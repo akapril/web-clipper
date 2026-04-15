@@ -206,5 +206,7 @@
   "tool.saveButton.noRepository": "Please select a repository",
   "tool.title": "Title",
   "tool.title.required": "Title is Required",
-  "tool.toolExtensions": "Tool Extension"
+  "tool.toolExtensions": "Tool Extension",
+  "backend.imageHosting.obsidian.name": "Obsidian",
+  "backend.imageHosting.obsidian.builtInRemark": "Obsidian REST API built-in image hosting"
 }
