@@ -127,24 +127,49 @@ export default class ObsidianService implements DocumentService {
   }
 
   /**
-   * REST API 模式：通过 Local REST API 插件创建笔记
+   * REST API 模式：通过 Local REST API 插件创建/追加笔记
    * 需要安装 obsidian-local-rest-api 社区插件
    * 无内容长度限制
+   *
+   * 写入模式：
+   * - create: PUT 创建或覆盖文件
+   * - append: POST 追加到文件末尾（文件不存在则创建）
+   * - prepend: POST 插入到文件开头（frontmatter 之后）
    */
   private async createViaRest(file: string, content: string): Promise<void> {
     const port = this.config.restApiPort || 27123;
     const apiKey = this.config.restApiKey || '';
+    const writeMode = this.config.writeMode || 'create';
     const filePath = file.endsWith('.md') ? file : `${file}.md`;
     const url = `http://127.0.0.1:${port}/vault/${encodeURIComponent(filePath)}`;
 
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'text/markdown',
-      },
-      body: content,
-    });
+    let method: string;
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'text/markdown',
+    };
+
+    switch (writeMode) {
+      case 'append':
+        // POST 追加到文件末尾，添加分隔线
+        method = 'POST';
+        content = `\n\n---\n\n${content}`;
+        break;
+      case 'prepend':
+        // PATCH 插入到文件开头（frontmatter 之后）
+        method = 'PATCH';
+        headers['Operation'] = 'prepend';
+        headers['Target-Type'] = 'heading';
+        headers['Target'] = '';
+        content = `${content}\n\n---\n\n`;
+        break;
+      case 'create':
+      default:
+        method = 'PUT';
+        break;
+    }
+
+    const response = await fetch(url, { method, headers, body: content });
 
     if (!response.ok) {
       throw new Error(`Obsidian REST API 错误: ${response.status} ${response.statusText}`);

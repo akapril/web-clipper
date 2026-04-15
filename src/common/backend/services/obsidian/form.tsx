@@ -3,7 +3,7 @@ import '@ant-design/compatible/assets/index.less';
 import { FormComponentProps } from '@ant-design/compatible/lib/form';
 import { Input, Select, InputNumber, Button, Tree, message, Spin } from 'antd';
 import React, { Fragment, useState, useCallback } from 'react';
-import { ObsidianFormConfig, ObsidianConnectionMode } from './interface';
+import { ObsidianFormConfig, ObsidianConnectionMode, ObsidianWriteMode } from './interface';
 import { DEFAULT_TEMPLATE } from './template';
 import localeService from '@/common/locales';
 
@@ -175,6 +175,29 @@ const ObsidianForm: React.FC<ObsidianFormProps & FormComponentProps> = ({ form, 
             {getFieldDecorator('restApiPort', {
               initialValue: initData.restApiPort || 27123,
             })(<InputNumber min={1} max={65535} />)}
+          </Form.Item>
+          <Form.Item label={localeService.format({
+            id: 'backend.services.obsidian.form.writeMode',
+            defaultMessage: 'Write Mode',
+          })}>
+            {getFieldDecorator('writeMode', {
+              initialValue: initData.writeMode || 'create',
+            })(
+              <Select>
+                <Option value="create">{localeService.format({
+                  id: 'backend.services.obsidian.form.writeMode.create',
+                  defaultMessage: 'Create / Overwrite',
+                })}</Option>
+                <Option value="append">{localeService.format({
+                  id: 'backend.services.obsidian.form.writeMode.append',
+                  defaultMessage: 'Append to end',
+                })}</Option>
+                <Option value="prepend">{localeService.format({
+                  id: 'backend.services.obsidian.form.writeMode.prepend',
+                  defaultMessage: 'Insert at beginning',
+                })}</Option>
+              </Select>
+            )}
           </Form.Item>
         </Fragment>
       )}

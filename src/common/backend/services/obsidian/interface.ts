@@ -9,6 +9,14 @@ import { CreateDocumentRequest } from '../../index';
 export type ObsidianConnectionMode = 'uri' | 'cli' | 'rest';
 
 /**
+ * 写入模式
+ * - create: 创建新文件（默认，文件已存在则覆盖）
+ * - append: 追加到已有文件末尾
+ * - prepend: 插入到已有文件开头（frontmatter 之后）
+ */
+export type ObsidianWriteMode = 'create' | 'append' | 'prepend';
+
+/**
  * 账户配置表单
  */
 export interface ObsidianFormConfig {
@@ -22,6 +30,8 @@ export interface ObsidianFormConfig {
   restApiPort?: number;
   /** 内容模板，支持变量插值 */
   contentTemplate?: string;
+  /** 写入模式，默认 create（仅 rest 模式支持 append/prepend） */
+  writeMode?: ObsidianWriteMode;
 }
 
 /**
