@@ -16,7 +16,7 @@ export default new TextExtension<string>(
 		}
 	},
   {
-    init: ({ currentImageHostingService }) => !!currentImageHostingService,
+    // 二维码使用 data URL 内联，不依赖图床
     run: async context => {
       const { QRCode, document } = context;
       const dataUrl = await QRCode.toDataURL(document.URL);
