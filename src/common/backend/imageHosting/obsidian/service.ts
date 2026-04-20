@@ -18,13 +18,27 @@ export default class ObsidianImageHostingService implements ImageHostingService 
 
   async uploadImage(request: UploadImageRequest): Promise<string> {
     const timestamp = Date.now();
-    const fileName = `clip-${timestamp}.png`;
+
+    // 从 data URL 中提取 MIME 类型和对应扩展名
+    const mimeMatch = request.data.match(/^data:([^;]+);base64,/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+    const EXT_MAP: Record<string, string> = {
+      'image/png': '.png',
+      'image/jpeg': '.jpg',
+      'image/gif': '.gif',
+      'image/webp': '.webp',
+      'image/svg+xml': '.svg',
+      'application/pdf': '.pdf',
+      'application/octet-stream': '.bin',
+    };
+    const ext = EXT_MAP[mime] || '.bin';
+    const fileName = `clip-${timestamp}${ext}`;
     const filePath = `${this.config.attachmentFolder}/${fileName}`;
     const port = this.config.restApiPort;
     const url = `http://127.0.0.1:${port}/vault/${encodeURIComponent(filePath)}`;
 
     // 将 base64 data URL 转为二进制数据
-    const base64Data = request.data.replace(/^data:image\/\w+;base64,/, '');
+    const base64Data = request.data.replace(/^data:[^;]+;base64,/, '');
     const binaryString = atob(base64Data);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
@@ -44,7 +58,6 @@ export default class ObsidianImageHostingService implements ImageHostingService 
       throw new Error(`Obsidian REST API error: ${response.status}`);
     }
 
-    // 返回 Obsidian 内部引用路径，用于 Markdown ![[path]] 或 ![](path)
     return filePath;
   }
 
