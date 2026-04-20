@@ -62,7 +62,7 @@ async function getChromeManifest() {
     host_permissions: ['https://api.clipper.website/*', 'https://resource.clipper.website/*'],
     optional_host_permissions: ['https://*/*', 'http://*/*', '<all_urls>'],
     optional_permissions: ['cookies'],
-    permissions: ['activeTab', 'storage', 'contextMenus', 'scripting', 'declarativeNetRequestWithHostAccess'],
+    permissions: ['activeTab', 'tabs', 'storage', 'contextMenus', 'scripting', 'declarativeNetRequestWithHostAccess'],
   };
 }
 
@@ -107,6 +107,7 @@ async function getFirefoxManifest() {
     permissions: [
       'cookies',
       'activeTab',
+      'tabs',
       'storage',
       'contextMenus',
       'scripting',
