@@ -1,16 +1,37 @@
 import { TextExtension } from '../../common';
 
 interface PdfInfo {
-  url: string;
+  /** 实际的 PDF 文件 URL（可能从 viewer 参数中提取） */
+  pdfUrl: string;
   title: string;
   isPdf: boolean;
+}
+
+/**
+ * 从 URL 中提取实际的 PDF 地址
+ * 支持直接 PDF URL 和 pdf.js viewer URL（file= 参数）
+ */
+function extractPdfUrl(url: string): string | null {
+  // pdf.js viewer: viewer.html?file=xxx
+  try {
+    const u = new URL(url);
+    const fileParam = u.searchParams.get('file');
+    if (fileParam && (fileParam.endsWith('.pdf') || fileParam.includes('/pdf/'))) {
+      return fileParam;
+    }
+  } catch (_e) {}
+  // 直接 PDF URL
+  if (url.endsWith('.pdf') || /\/pdf\/[^/]+/.test(url)) {
+    return url;
+  }
+  return null;
 }
 
 export default new TextExtension<PdfInfo>(
   {
     name: 'Save PDF',
     icon: 'file-pdf',
-    version: '1.0.0',
+    version: '1.0.1',
     description: 'Save PDF file to Obsidian vault or download.',
     i18nManifest: {
       'zh-CN': { name: '保存 PDF', description: '将 PDF 文件保存到笔记或下载' },
@@ -18,22 +39,21 @@ export default new TextExtension<PdfInfo>(
     },
   },
   {
-    // 仅在 PDF 页面显示
+    // 仅在 PDF 页面或 pdf.js viewer 页面显示
     init: ({ url }) => {
       if (!url) return false;
-      return url.endsWith('.pdf') || url.includes('/pdf/') || url.includes('pdf');
+      return extractPdfUrl(url) !== null;
     },
     run: async (context) => {
       const { document } = context;
       const url = document.URL;
-      const isPdf = url.endsWith('.pdf') ||
-        document.contentType === 'application/pdf' ||
-        url.includes('/pdf/');
+      const pdfUrl = extractPdfUrl(url);
+      const isPdf = pdfUrl !== null;
       const title = document.title
         .replace(/\.pdf$/i, '')
         .replace(/[\/\\:*?"<>|]/g, '-')
         .trim() || 'document';
-      return { url, title, isPdf };
+      return { pdfUrl: pdfUrl || url, title, isPdf };
     },
     afterRun: async (context) => {
       const { result, imageService, message } = context;
@@ -46,7 +66,7 @@ export default new TextExtension<PdfInfo>(
       // 下载 PDF 文件
       let pdfBlob: Blob;
       try {
-        const response = await fetch(result.url);
+        const response = await fetch(result.pdfUrl);
         if (!response.ok) {
           throw new Error(`${response.status}`);
         }
@@ -82,7 +102,7 @@ export default new TextExtension<PdfInfo>(
           return [
             `# ${result.title}`,
             '',
-            `- 来源: [${result.title}](${result.url})`,
+            `- 来源: [${result.title}](${result.pdfUrl})`,
             `- 日期: ${now}`,
             `- 附件: ${attachmentRef}`,
             '',
@@ -105,7 +125,7 @@ export default new TextExtension<PdfInfo>(
       return [
         `# ${result.title}`,
         '',
-        `- 来源: [${result.title}](${result.url})`,
+        `- 来源: [${result.title}](${result.pdfUrl})`,
         `- 日期: ${now}`,
         '',
         context.data || '',
