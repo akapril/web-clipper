@@ -1,12 +1,13 @@
 import { UserPreferenceStore } from '@/common/types';
-import { FormComponentProps } from '@ant-design/compatible/lib/form';
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { omit, isEqual } from 'lodash';
 import { FormattedMessage } from 'react-intl';
-import { message } from 'antd';
+import { message, Form } from 'antd';
 import { useFetch } from '@shihengtech/hooks';
+import type { FormInstance } from 'antd';
 
-type UseVerifiedAccountProps = FormComponentProps & {
+type UseVerifiedAccountProps = {
+  form: FormInstance;
   services: UserPreferenceStore['servicesMeta'];
   initAccount?: any;
 };
@@ -27,7 +28,8 @@ const useVerifiedAccount = ({ form, services, initAccount }: UseVerifiedAccountP
   const changeType = (type: string) => {
     _setType(type);
     const values = form.getFieldsValue();
-    form.resetFields(Object.keys(omit(values, ['type'])));
+    const keysToReset = Object.keys(omit(values, ['type']));
+    form.resetFields(keysToReset);
   };
   const { data, run, loading } = useFetch(
     async (info: any) => {
@@ -47,14 +49,14 @@ const useVerifiedAccount = ({ form, services, initAccount }: UseVerifiedAccountP
     }
   );
 
-  let loadAccount = useCallback(() => {
-    form.validateFields((error, values) => {
-      if (error) {
-        return;
-      }
+  let loadAccount = useCallback(async () => {
+    try {
+      const values = await form.validateFields();
       const { type, defaultRepositoryId, imageHosting, ...info } = values;
       run(info);
-    });
+    } catch (_e) {
+      // 表单校验失败
+    }
   }, [form, run]);
 
   const accountStatus = {
@@ -68,16 +70,16 @@ const useVerifiedAccount = ({ form, services, initAccount }: UseVerifiedAccountP
     if (!service.form) {
       return null;
     }
+    // antd 5: 服务表单在 <Form> 内部渲染，不再需要传 form prop
     return (
       <service.form
-        form={form}
         verified={accountStatus.verified}
         info={initAccount}
         loadAccount={loadAccount}
       />
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountStatus.verified, form, initAccount, loadAccount, service.form]);
+  }, [accountStatus.verified, initAccount, loadAccount, service.form]);
 
   const okText = useMemo(() => {
     if (loading) {

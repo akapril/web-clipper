@@ -1,9 +1,6 @@
 import React, { useMemo, useEffect } from 'react';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { Form } from '@ant-design/compatible';
-import '@ant-design/compatible/assets/index.less';
-import { Modal, Select } from 'antd';
-import { FormComponentProps } from '@ant-design/compatible/lib/form';
+import { Form, Modal, Select } from 'antd';
 import styles from './index.less';
 import { ImageHostingServiceMeta } from 'common/backend';
 import { AccountPreference, UserPreferenceStore, ImageHosting } from '@/common/types';
@@ -23,30 +20,29 @@ type PageOwnProps = {
   currentAccount: AccountPreference;
   visible: boolean;
   onCancel(): void;
-  onEdit(oldId: string, userInfo: any, newId: string): void;
+  onEdit(oldId: string, userInfo: any, newId: string, values: any): void;
 };
-type PageProps = PageOwnProps & FormComponentProps;
 
 const ModalTitle = () => (
   <div className={styles.modalTitle}>
-    <FormattedMessage id="preference.accountList.addAccount" defaultMessage="Add Account" />
+    <FormattedMessage id="preference.accountList.editAccount" defaultMessage="Edit Account" />
     <a href={'https://www.yuque.com/yuqueclipper/help_cn/bind_account'} target="_blank">
       <QuestionCircleOutlined />
     </a>
   </div>
 );
 
-const Page: React.FC<PageProps> = ({
+const Page: React.FC<PageOwnProps> = ({
   visible,
   currentAccount,
   servicesMeta,
-  form,
-  form: { getFieldDecorator },
   onCancel,
   onEdit,
   imageHosting,
   imageHostingServicesMeta,
 }) => {
+  const [form] = Form.useForm();
+
   const {
     type,
     accountStatus: { verified, repositories, userInfo, id },
@@ -88,70 +84,55 @@ const Page: React.FC<PageProps> = ({
 
   return (
     <Modal
-      visible={visible}
+      open={visible}
       title={<ModalTitle />}
       okText={verified ? okText : verifyText}
       okType="primary"
-      okButtonProps={{
-        loading: verifying,
-      }}
+      okButtonProps={{ loading: verifying }}
       onCancel={onCancel}
       onOk={() => {
         if (verified) {
-          onEdit(currentAccount.id, userInfo, id!);
+          const values = form.getFieldsValue();
+          onEdit(currentAccount.id, userInfo, id!, values);
         } else {
           loadAccount();
         }
       }}
     >
-      <Form labelCol={{ span: 7, offset: 0 }} wrapperCol={{ span: 17 }}>
+      <Form
+        form={form}
+        labelCol={{ span: 7, offset: 0 }}
+        wrapperCol={{ span: 17 }}
+        initialValues={{
+          type: currentAccount.type,
+          defaultRepositoryId: currentAccount.defaultRepositoryId,
+          imageHosting: currentAccount.imageHosting,
+        }}
+      >
         <Form.Item
+          name="type"
           label={<FormattedMessage id="preference.accountList.type" defaultMessage="Type" />}
         >
-          {getFieldDecorator('type', {
-            initialValue: currentAccount.type,
-          })(
-            <Select disabled>
-              {Object.values(servicesMeta).map(o => (
-                <Select.Option key={o.type} value={o.type}>
-                  {o.name}
-                </Select.Option>
-              ))}
-            </Select>
-          )}
+          <Select disabled>
+            {Object.values(servicesMeta).map(o => (
+              <Select.Option key={o.type} value={o.type}>
+                {o.name}
+              </Select.Option>
+            ))}
+          </Select>
         </Form.Item>
         {serviceForm}
         <Form.Item
-          label={
-            <FormattedMessage
-              id="preference.accountList.defaultRepository"
-              defaultMessage="Default Repository"
-            />
-          }
+          name="defaultRepositoryId"
+          label={<FormattedMessage id="preference.accountList.defaultRepository" defaultMessage="Default Repository" />}
         >
-          {getFieldDecorator('defaultRepositoryId', {
-            initialValue: currentAccount.defaultRepositoryId,
-          })(
-            <RepositorySelect
-              disabled={!verified || verifying}
-              loading={verifying}
-              repositories={repositories}
-            />
-          )}
+          <RepositorySelect disabled={!verified || verifying} loading={verifying} repositories={repositories} />
         </Form.Item>
         <Form.Item
-          label={
-            <FormattedMessage id="preference.accountList.imageHost" defaultMessage="Image Host" />
-          }
+          name="imageHosting"
+          label={<FormattedMessage id="preference.accountList.imageHost" defaultMessage="Image Host" />}
         >
-          {getFieldDecorator('imageHosting', {
-            initialValue: currentAccount.imageHosting,
-          })(
-            <ImageHostingSelect
-              disabled={!verified}
-              supportedImageHostingServices={supportedImageHostingServices}
-            ></ImageHostingSelect>
-          )}
+          <ImageHostingSelect disabled={!verified} supportedImageHostingServices={supportedImageHostingServices} />
         </Form.Item>
       </Form>
     </Modal>

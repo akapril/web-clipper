@@ -14,7 +14,7 @@ import {
   SettingOutlined,
 } from '@ant-design/icons';
 
-import { Tabs, Badge, message } from 'antd';
+import { Tabs, Badge, message, theme } from 'antd';
 import { FormattedMessage } from 'react-intl';
 import Base from './base';
 import { DvaRouterProps, GlobalStore } from '@/common/types';
@@ -85,6 +85,7 @@ const Preference: React.FC<PageProps> = ({
   history: { push },
   accounts,
 }) => {
+  const { token } = theme.useToken();
   const goHome = () => {
     if (accounts.length === 0) {
       message.error(
@@ -108,7 +109,7 @@ const Preference: React.FC<PageProps> = ({
         <div onClick={goHome} className={styles.closeIcon}>
           <CloseOutlined />
         </div>
-        <div style={{ background: 'white', height: '100%' }}>
+        <div style={{ background: token.colorBgContainer, height: '100%' }}>
           <Tabs activeKey={pathname} tabPosition="left" style={{ height: '100%' }} onChange={push}>
             {tabs.map(tab => {
               const path = `/preference/${tab.path}`;

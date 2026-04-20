@@ -2,11 +2,8 @@ import React, { useEffect, useMemo } from 'react';
 import { connect } from 'dva';
 import { parse } from 'qs';
 import { DvaRouterProps, GlobalStore } from '@/common/types';
-import { Form } from '@ant-design/compatible';
-import '@ant-design/compatible/assets/index.less';
-import { Modal, Select } from 'antd';
+import { Form, Modal, Select } from 'antd';
 import { FormattedMessage } from 'react-intl';
-import { FormComponentProps } from '@ant-design/compatible/lib/form';
 import useVerifiedAccount from '@/common/hooks/useVerifiedAccount';
 import ImageHostingSelect from '@/components/ImageHostingSelect';
 import useFilterImageHostingServices, {
@@ -34,7 +31,7 @@ const mapStateToProps = ({
   };
 };
 type PageStateProps = ReturnType<typeof mapStateToProps>;
-type PageProps = PageStateProps & DvaRouterProps & FormComponentProps;
+type PageProps = PageStateProps & DvaRouterProps;
 
 function useDeepCompareMemoize<T>(value: T) {
   const ref = React.useRef<T>();
@@ -47,12 +44,8 @@ function useDeepCompareMemoize<T>(value: T) {
 const Page: React.FC<PageProps> = props => {
   const query: PageQuery = parse(props.location.search.slice(1)) as any;
   const tabService = Container.get(ITabService);
-  const {
-    form: { getFieldDecorator },
-    form,
-    imageHosting,
-    imageHostingServicesMeta,
-  } = props;
+  const [form] = Form.useForm();
+  const { imageHosting, imageHostingServicesMeta } = props;
 
   const {
     type,
@@ -62,7 +55,7 @@ const Page: React.FC<PageProps> = props => {
     verifying,
     okText,
   } = useVerifiedAccount({
-    form: props.form,
+    form,
     services: props.servicesMeta,
     initAccount: query,
   });
@@ -95,7 +88,7 @@ const Page: React.FC<PageProps> = props => {
 
   return (
     <Modal
-      visible
+      open={true}
       okText={okText}
       onCancel={tabService.closeCurrent}
       okButtonProps={{
@@ -103,12 +96,10 @@ const Page: React.FC<PageProps> = props => {
         loading: verifying,
       }}
       title={<FormattedMessage id="auth.modal.title" />}
-      onOk={() => {
-        form.validateFields((error, values) => {
-          if (error) {
-            return;
-          }
-          const { defaultRepositoryId, imageHosting, ...info } = values;
+      onOk={async () => {
+        try {
+          const values = await form.validateFields();
+          const { type, defaultRepositoryId, imageHosting, ...info } = values;
           props.dispatch(
             asyncAddAccount.started({
               id: id!,
@@ -120,27 +111,25 @@ const Page: React.FC<PageProps> = props => {
               callback: tabService.closeCurrent,
             })
           );
-        });
+        } catch (_e) {}
       }}
     >
-      <Form labelCol={{ span: 7, offset: 0 }} wrapperCol={{ span: 17 }}>
+      <Form form={form} labelCol={{ span: 7, offset: 0 }} wrapperCol={{ span: 17 }} initialValues={{ type: query.type }}>
         <Form.Item
+          name="type"
           label={<FormattedMessage id="preference.accountList.type" defaultMessage="Type" />}
         >
-          {getFieldDecorator('type', {
-            initialValue: query.type,
-          })(
-            <Select disabled>
-              {Object.values(props.servicesMeta).map(o => (
-                <Select.Option key={o.type} value={o.type}>
-                  {o.name}
-                </Select.Option>
-              ))}
-            </Select>
-          )}
+          <Select disabled>
+            {Object.values(props.servicesMeta).map(o => (
+              <Select.Option key={o.type} value={o.type}>
+                {o.name}
+              </Select.Option>
+            ))}
+          </Select>
         </Form.Item>
         {serviceForm}
         <Form.Item
+          name="defaultRepositoryId"
           label={
             <FormattedMessage
               id="preference.accountList.defaultRepository"
@@ -148,29 +137,26 @@ const Page: React.FC<PageProps> = props => {
             />
           }
         >
-          {getFieldDecorator('defaultRepositoryId')(
-            <RepositorySelect
-              disabled={!verified}
-              loading={verifying}
-              repositories={repositories}
-            />
-          )}
+          <RepositorySelect
+            disabled={!verified}
+            loading={verifying}
+            repositories={repositories}
+          />
         </Form.Item>
         <Form.Item
+          name="imageHosting"
           label={
             <FormattedMessage id="preference.accountList.imageHost" defaultMessage="Image Host" />
           }
         >
-          {getFieldDecorator('imageHosting')(
-            <ImageHostingSelect
-              disabled={!verified}
-              supportedImageHostingServices={supportedImageHostingServices}
-            />
-          )}
+          <ImageHostingSelect
+            disabled={!verified}
+            supportedImageHostingServices={supportedImageHostingServices}
+          />
         </Form.Item>
       </Form>
     </Modal>
   );
 };
 
-export default connect(mapStateToProps)(Form.create<PageProps>()(Page));
+export default connect(mapStateToProps)(Page);

@@ -1,8 +1,5 @@
-import { Form } from '@ant-design/compatible';
-import '@ant-design/compatible/assets/index.less';
-import { FormComponentProps } from '@ant-design/compatible/lib/form';
-import { Input, Select, InputNumber, Button, Tree, message, Spin } from 'antd';
-import React, { Fragment, useState, useCallback } from 'react';
+import { Form, Input, Select, InputNumber, Button, Tree, message, Spin } from 'antd';
+import React, { useState, useCallback } from 'react';
 import { ObsidianFormConfig, ObsidianConnectionMode, ObsidianWriteMode } from './interface';
 import { DEFAULT_TEMPLATE } from './template';
 import localeService from '@/common/locales';
@@ -73,22 +70,22 @@ function renderTreeNodes(nodes: FolderTreeNode[]): React.ReactNode {
   ));
 }
 
-const ObsidianForm: React.FC<ObsidianFormProps & FormComponentProps> = ({ form, info }) => {
-  const { getFieldDecorator, getFieldValue, setFieldsValue } = form;
+const ObsidianForm: React.FC<ObsidianFormProps> = ({ info }) => {
+  const form = Form.useFormInstance();
   const initData: Partial<ObsidianFormConfig> = info || {};
-  const connectionMode: ObsidianConnectionMode = getFieldValue('connectionMode') || initData.connectionMode || 'uri';
+  const connectionMode: ObsidianConnectionMode = Form.useWatch('connectionMode', form) || initData.connectionMode || 'uri';
   const [fetching, setFetching] = useState(false);
   const [treeData, setTreeData] = useState<FolderTreeNode[]>([]);
   const [treeLoaded, setTreeLoaded] = useState(false);
 
   // 已选中的文件夹（从 folder 字段解析）
-  const currentFolder: string = getFieldValue('folder') || initData.folder || '';
-  const checkedKeys = currentFolder ? currentFolder.split('\n').filter(f => f.trim()) : [];
+  const folderValue: string = Form.useWatch('folder', form) || initData.folder || '';
+  const checkedKeys = folderValue ? folderValue.split('\n').filter(f => f.trim()) : [];
 
   // 获取目录树
   const handleFetchTree = useCallback(async () => {
-    const port = getFieldValue('restApiPort') || 27123;
-    const apiKey = getFieldValue('restApiKey') || '';
+    const port = form.getFieldValue('restApiPort') || 27123;
+    const apiKey = form.getFieldValue('restApiKey') || '';
     if (!apiKey) {
       message.warning(localeService.format({
         id: 'backend.services.obsidian.form.restApiKey.required',
@@ -102,7 +99,7 @@ const ObsidianForm: React.FC<ObsidianFormProps & FormComponentProps> = ({ form, 
       setTreeData(tree);
       setTreeLoaded(true);
       if (tree.length === 0) {
-        setFieldsValue({ folder: '/' });
+        form.setFieldsValue({ folder: '/' });
         message.info(localeService.format({
           id: 'backend.services.obsidian.form.fetchFolders.empty',
           defaultMessage: 'No subfolders found, using vault root',
@@ -116,107 +113,117 @@ const ObsidianForm: React.FC<ObsidianFormProps & FormComponentProps> = ({ form, 
     } finally {
       setFetching(false);
     }
-  }, [getFieldValue, setFieldsValue]);
+  }, [form]);
 
   // 树节点勾选变化时更新 folder 字段
   const handleTreeCheck = useCallback((checked: any) => {
     const keys: string[] = Array.isArray(checked) ? checked : checked.checked || [];
-    setFieldsValue({ folder: keys.join('\n') });
-  }, [setFieldsValue]);
+    form.setFieldsValue({ folder: keys.join('\n') });
+  }, [form]);
 
   return (
-    <Fragment>
-      <Form.Item label="Vault">
-        {getFieldDecorator('vault', {
-          initialValue: initData.vault,
-          rules: [{ required: true, message: localeService.format({
-            id: 'backend.services.obsidian.form.vault.required',
-            defaultMessage: 'Please input your vault name',
-          })}],
-        })(<Input />)}
+    <>
+      <Form.Item
+        label="Vault"
+        name="vault"
+        initialValue={initData.vault}
+        rules={[{ required: true, message: localeService.format({
+          id: 'backend.services.obsidian.form.vault.required',
+          defaultMessage: 'Please input your vault name',
+        })}]}
+      >
+        <Input />
       </Form.Item>
 
-      <Form.Item label={localeService.format({
-        id: 'backend.services.obsidian.form.connectionMode',
-        defaultMessage: 'Connection Mode',
-      })}>
-        {getFieldDecorator('connectionMode', {
-          initialValue: initData.connectionMode || 'uri',
-        })(
-          <Select>
-            <Option value="uri">URI (obsidian://)</Option>
-            <Option value="cli">CLI ({localeService.format({
-              id: 'backend.services.obsidian.form.connectionMode.cli.hint',
-              defaultMessage: 'clipboard, no size limit',
-            })})</Option>
-            <Option value="rest">REST API ({localeService.format({
-              id: 'backend.services.obsidian.form.connectionMode.rest.hint',
-              defaultMessage: 'requires plugin',
-            })})</Option>
-          </Select>
-        )}
+      <Form.Item
+        label={localeService.format({
+          id: 'backend.services.obsidian.form.connectionMode',
+          defaultMessage: 'Connection Mode',
+        })}
+        name="connectionMode"
+        initialValue={initData.connectionMode || 'uri'}
+      >
+        <Select>
+          <Option value="uri">URI (obsidian://)</Option>
+          <Option value="cli">CLI ({localeService.format({
+            id: 'backend.services.obsidian.form.connectionMode.cli.hint',
+            defaultMessage: 'clipboard, no size limit',
+          })})</Option>
+          <Option value="rest">REST API ({localeService.format({
+            id: 'backend.services.obsidian.form.connectionMode.rest.hint',
+            defaultMessage: 'requires plugin',
+          })})</Option>
+        </Select>
       </Form.Item>
 
       {connectionMode === 'rest' && (
-        <Fragment>
-          <Form.Item label="API Key">
-            {getFieldDecorator('restApiKey', {
-              initialValue: initData.restApiKey,
-              rules: [{ required: true, message: localeService.format({
-                id: 'backend.services.obsidian.form.restApiKey.required',
-                defaultMessage: 'REST API Key is required',
-              })}],
-            })(<Input.Password />)}
+        <>
+          <Form.Item
+            label="API Key"
+            name="restApiKey"
+            initialValue={initData.restApiKey}
+            rules={[{ required: true, message: localeService.format({
+              id: 'backend.services.obsidian.form.restApiKey.required',
+              defaultMessage: 'REST API Key is required',
+            })}]}
+          >
+            <Input.Password />
           </Form.Item>
-          <Form.Item label={localeService.format({
-            id: 'backend.services.obsidian.form.restApiPort',
-            defaultMessage: 'Port',
-          })}>
-            {getFieldDecorator('restApiPort', {
-              initialValue: initData.restApiPort || 27123,
-            })(<InputNumber min={1} max={65535} />)}
+          <Form.Item
+            label={localeService.format({
+              id: 'backend.services.obsidian.form.restApiPort',
+              defaultMessage: 'Port',
+            })}
+            name="restApiPort"
+            initialValue={initData.restApiPort || 27123}
+          >
+            <InputNumber min={1} max={65535} />
           </Form.Item>
-          <Form.Item label={localeService.format({
-            id: 'backend.services.obsidian.form.writeMode',
-            defaultMessage: 'Write Mode',
-          })}>
-            {getFieldDecorator('writeMode', {
-              initialValue: initData.writeMode || 'create',
-            })(
-              <Select>
-                <Option value="create">{localeService.format({
-                  id: 'backend.services.obsidian.form.writeMode.create',
-                  defaultMessage: 'Create / Overwrite',
-                })}</Option>
-                <Option value="append">{localeService.format({
-                  id: 'backend.services.obsidian.form.writeMode.append',
-                  defaultMessage: 'Append to end',
-                })}</Option>
-                <Option value="prepend">{localeService.format({
-                  id: 'backend.services.obsidian.form.writeMode.prepend',
-                  defaultMessage: 'Insert at beginning',
-                })}</Option>
-              </Select>
-            )}
+          <Form.Item
+            label={localeService.format({
+              id: 'backend.services.obsidian.form.writeMode',
+              defaultMessage: 'Write Mode',
+            })}
+            name="writeMode"
+            initialValue={initData.writeMode || 'create'}
+          >
+            <Select>
+              <Option value="create">{localeService.format({
+                id: 'backend.services.obsidian.form.writeMode.create',
+                defaultMessage: 'Create / Overwrite',
+              })}</Option>
+              <Option value="append">{localeService.format({
+                id: 'backend.services.obsidian.form.writeMode.append',
+                defaultMessage: 'Append to end',
+              })}</Option>
+              <Option value="prepend">{localeService.format({
+                id: 'backend.services.obsidian.form.writeMode.prepend',
+                defaultMessage: 'Insert at beginning',
+              })}</Option>
+            </Select>
           </Form.Item>
-        </Fragment>
+        </>
       )}
 
       {/* 隐藏的 folder 字段，用于存储选中值 */}
-      {getFieldDecorator('folder', {
-        initialValue: initData.folder,
-        rules: [{ required: true, message: localeService.format({
+      <Form.Item
+        name="folder"
+        initialValue={initData.folder}
+        rules={[{ required: true, message: localeService.format({
           id: 'backend.services.obsidian.form.folder.required',
           defaultMessage: 'Please select save folders',
-        })}],
-      })(<Input type="hidden" />)}
+        })}]}
+        hidden
+      >
+        <Input />
+      </Form.Item>
 
       <Form.Item label={localeService.format({
         id: 'backend.services.obsidian.form.folder',
         defaultMessage: 'Save Folder',
       })}>
         {connectionMode === 'rest' ? (
-          <Fragment>
+          <>
             <Button
               size="small"
               loading={fetching}
@@ -249,11 +256,11 @@ const ObsidianForm: React.FC<ObsidianFormProps & FormComponentProps> = ({ form, 
                 })}
               </div>
             )}
-          </Fragment>
+          </>
         ) : (
           <Input.TextArea
-            value={currentFolder}
-            onChange={(e) => setFieldsValue({ folder: e.target.value })}
+            value={folderValue}
+            onChange={(e) => form.setFieldsValue({ folder: e.target.value })}
             placeholder={localeService.format({
               id: 'backend.services.obsidian.form.folder.placeholder',
               defaultMessage: 'One folder per line',
@@ -262,23 +269,23 @@ const ObsidianForm: React.FC<ObsidianFormProps & FormComponentProps> = ({ form, 
         )}
       </Form.Item>
 
-      <Form.Item label={localeService.format({
-        id: 'backend.services.obsidian.form.contentTemplate',
-        defaultMessage: 'Content Template',
-      })}>
-        {getFieldDecorator('contentTemplate', {
-          initialValue: initData.contentTemplate || DEFAULT_TEMPLATE,
-        })(
-          <Input.TextArea
-            rows={8}
-            placeholder={localeService.format({
-              id: 'backend.services.obsidian.form.contentTemplate.placeholder',
-              defaultMessage: 'Variables: {{title}}, {{url}}, {{date}}, {{tags}}, {{content}}',
-            })}
-          />
-        )}
+      <Form.Item
+        label={localeService.format({
+          id: 'backend.services.obsidian.form.contentTemplate',
+          defaultMessage: 'Content Template',
+        })}
+        name="contentTemplate"
+        initialValue={initData.contentTemplate || DEFAULT_TEMPLATE}
+      >
+        <Input.TextArea
+          rows={8}
+          placeholder={localeService.format({
+            id: 'backend.services.obsidian.form.contentTemplate.placeholder',
+            defaultMessage: 'Variables: {{title}}, {{url}}, {{date}}, {{tags}}, {{content}}',
+          })}
+        />
       </Form.Item>
-    </Fragment>
+    </>
   );
 };
 

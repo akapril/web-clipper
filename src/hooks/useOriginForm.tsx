@@ -1,9 +1,10 @@
 import React from 'react';
 import { FormattedMessage } from 'react-intl';
 import useOriginPermission from '@/common/hooks/useOriginPermission';
-import { FormComponentProps } from '@ant-design/compatible/lib/form';
+import type { FormInstance } from 'antd';
 
-interface UseOriginFormProps extends FormComponentProps {
+interface UseOriginFormProps {
+  form: FormInstance;
   initStatus: boolean;
   originKey?: string;
 }
@@ -12,11 +13,10 @@ const useOriginForm = ({ initStatus, form, originKey }: UseOriginFormProps) => {
   const key = originKey || 'origin';
   const [verified, requestOriginPermission] = useOriginPermission(initStatus);
   const handleAuthentication = () => {
-    form.validateFields([key], async (err, value) => {
-      if (err) {
-        return;
-      }
+    form.validateFields([key]).then((value) => {
       requestOriginPermission(value[key]);
+    }).catch(() => {
+      // 校验失败，忽略
     });
   };
   const formRules = [
@@ -30,9 +30,9 @@ const useOriginForm = ({ initStatus, form, originKey }: UseOriginFormProps) => {
       ),
     },
     {
-      validator(_r: any, value: string, callback: Function) {
+      validator(_r: any, value: string) {
         if (!value) {
-          return callback();
+          return Promise.resolve();
         }
         try {
           const _url = new URL(value);
@@ -40,11 +40,10 @@ const useOriginForm = ({ initStatus, form, originKey }: UseOriginFormProps) => {
             form.setFieldsValue({
               [key]: _url.toString(),
             });
-            callback();
           }
-          callback();
+          return Promise.resolve();
         } catch (_error) {
-          return callback(
+          return Promise.reject(
             <FormattedMessage
               id="hooks.useOriginForm.origin.message"
               defaultMessage={`Wrong format,Examples https://developer.mozilla.org`}

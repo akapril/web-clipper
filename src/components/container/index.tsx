@@ -1,6 +1,7 @@
 import React from 'react';
 import styles from './index.less';
 import { CloseOutlined } from '@ant-design/icons';
+import { theme } from 'antd';
 
 const Container: React.FC = ({ children }) => {
   return <div className={styles.mainContainer}>{children}</div>;
@@ -11,40 +12,38 @@ export interface ToolContainerProps {
   onClickMask?: () => void;
 }
 
-export class ToolContainer extends React.Component<ToolContainerProps> {
-  onClickCloseButton = () => {
-    if (this.props.onClickCloseButton) {
-      this.props.onClickCloseButton();
-    }
-  };
-
-  handleClickMask = () => {
-    if (this.props.onClickMask) {
-      this.props.onClickMask();
-    }
-  };
-
-  public render() {
-    return (
-      <React.Fragment>
-        <div className={styles.mask} onClick={this.handleClickMask}></div>
-        <Container>
-          <div className={styles.toolContainer}>
-            <div className={styles.closeButton} onClick={this.onClickCloseButton}>
-              <CloseOutlined />
-            </div>
-            {<div>{this.props.children}</div>}
+export const ToolContainer: React.FC<ToolContainerProps> = ({ onClickCloseButton, onClickMask, children }) => {
+  const { token } = theme.useToken();
+  return (
+    <React.Fragment>
+      <div className={styles.mask} onClick={onClickMask}></div>
+      <Container>
+        <div
+          className={styles.toolContainer}
+          style={{ background: token.colorBgContainer, color: token.colorText }}
+        >
+          <div className={styles.closeButton} onClick={onClickCloseButton} style={{ color: token.colorTextSecondary }}>
+            <CloseOutlined />
           </div>
-        </Container>
-      </React.Fragment>
-    );
-  }
-}
+          <div>{children}</div>
+        </div>
+      </Container>
+    </React.Fragment>
+  );
+};
 
 export const CenterContainer: React.FC = ({ children }) => {
   return <div className={styles.centerContainer}>{children}</div>;
 };
 
 export const EditorContainer: React.FC = ({ children }) => {
-  return <div className={styles.editorContainer}>{children}</div>;
+  const { token } = theme.useToken();
+  return (
+    <div
+      className={styles.editorContainer}
+      style={{ background: token.colorBgContainer, borderColor: token.colorBorder }}
+    >
+      {children}
+    </div>
+  );
 };

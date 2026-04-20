@@ -1,8 +1,5 @@
 import React from 'react';
-import { Form } from '@ant-design/compatible';
-import '@ant-design/compatible/assets/index.less';
-import { Modal, Select, Input } from 'antd';
-import { FormComponentProps } from '@ant-design/compatible/lib/form';
+import { Form, Modal, Select, Input } from 'antd';
 import { ImageHostingServiceMeta } from '../../../../common/backend';
 import { ImageHosting } from '@/common/types';
 import { FormattedMessage } from 'react-intl';
@@ -13,100 +10,89 @@ type PageOwnProps = {
   currentImageHosting?: ImageHosting | null;
   imageHostingServicesMeta: { [type: string]: ImageHostingServiceMeta };
   visible: boolean;
-  onAddAccount(): void;
-  onEditAccount(id: string): void;
+  onAddAccount(values: any): void;
+  onEditAccount(id: string, values: any): void;
   onCancel(): void;
 };
-
-type PageProps = PageOwnProps & FormComponentProps;
 
 const formItemLayout = {
   wrapperCol: { span: 17 },
   labelCol: { span: 6, offset: 0 },
 };
 
-const AddImageHostingModal: React.FC<PageProps> = props => {
-  const {
-    imageHostingServicesMeta,
-    visible,
-    currentImageHosting,
-    form: { getFieldDecorator, getFieldValue },
-  } = props;
+const AddImageHostingModal: React.FC<PageOwnProps> = props => {
+  const { imageHostingServicesMeta, visible, currentImageHosting } = props;
+  const [form] = Form.useForm();
+  const type = Form.useWatch('type', form);
 
-  const getImageHostingForm = (info?: Pick<ImageHosting, 'info'>) => {
-    const {
-      imageHostingServicesMeta,
-      form: { getFieldValue },
-      form,
-    } = props;
-    const type = getFieldValue('type');
+  const getImageHostingForm = () => {
     if (type) {
       const ServiceForm = imageHostingServicesMeta[type]?.form;
       if (ServiceForm) {
-        return <ServiceForm form={form} info={info} />;
+        return <ServiceForm info={currentImageHosting?.info} />;
       }
     }
+    return null;
   };
 
   const handleOk = async () => {
-    const permissionsService = Container.get(IPermissionsService);
-    const type = getFieldValue('type');
-    const permission = imageHostingServicesMeta[type]?.permission;
-    if (permission) {
-      const result = await permissionsService.request(permission);
-      if (!result) {
-        return;
+    try {
+      const values = await form.validateFields();
+      const permissionsService = Container.get(IPermissionsService);
+      const permission = imageHostingServicesMeta[values.type]?.permission;
+      if (permission) {
+        const result = await permissionsService.request(permission);
+        if (!result) return;
       }
-    }
-    const { currentImageHosting } = props;
-    if (currentImageHosting) {
-      props.onEditAccount(currentImageHosting.id);
-    } else {
-      props.onAddAccount();
-    }
+      if (currentImageHosting) {
+        props.onEditAccount(currentImageHosting.id, values);
+      } else {
+        props.onAddAccount(values);
+      }
+    } catch (_e) {}
   };
 
   const services = Object.values(imageHostingServicesMeta);
   let title;
-  let initImageHosting: Omit<ImageHosting, 'id'>;
+  let initValues: any;
   if (currentImageHosting) {
     title = <FormattedMessage id="preference.imageHosting.edit" defaultMessage="Edit" />;
-    initImageHosting = currentImageHosting;
+    initValues = {
+      type: currentImageHosting.type,
+      remark: currentImageHosting.remark,
+      ...currentImageHosting.info,
+    };
   } else {
     title = <FormattedMessage id="preference.imageHosting.add" defaultMessage="Add" />;
-    initImageHosting = {
-      type: services.filter(o => !o.builtIn)[0].type,
+    initValues = {
+      type: services.filter(o => !o.builtIn)[0]?.type,
     };
   }
 
   return (
-    <Modal title={title} visible={visible} onOk={handleOk} onCancel={props.onCancel} destroyOnClose>
-      <Form {...formItemLayout}>
+    <Modal title={title} open={visible} onOk={handleOk} onCancel={props.onCancel} destroyOnClose>
+      <Form form={form} {...formItemLayout} initialValues={initValues}>
         <Form.Item
+          name="type"
           label={<FormattedMessage id="preference.imageHosting.type" defaultMessage="Type" />}
+          rules={[{ required: true }]}
         >
-          {getFieldDecorator('type', {
-            initialValue: initImageHosting.type,
-            rules: [{ required: true }],
-          })(
-            <Select>
-              {services
-                .filter(o => !o.builtIn)
-                .map(service => (
-                  <Select.Option key={service.type} value={service.type}>
-                    {service.name}
-                  </Select.Option>
-                ))}
-            </Select>
-          )}
+          <Select>
+            {services
+              .filter(o => !o.builtIn)
+              .map(service => (
+                <Select.Option key={service.type} value={service.type}>
+                  {service.name}
+                </Select.Option>
+              ))}
+          </Select>
         </Form.Item>
-        {getImageHostingForm(initImageHosting.info)}
+        {getImageHostingForm()}
         <Form.Item
+          name="remark"
           label={<FormattedMessage id="preference.imageHosting.remark" defaultMessage="Remark" />}
         >
-          {getFieldDecorator('remark', {
-            initialValue: initImageHosting.remark,
-          })(<Input />)}
+          <Input />
         </Form.Item>
       </Form>
     </Modal>

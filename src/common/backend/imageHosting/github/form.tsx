@@ -1,7 +1,5 @@
 import React, { Fragment } from 'react';
-import { FormComponentProps } from '@ant-design/compatible/lib/form';
-import { Input, Select, Tooltip } from 'antd';
-import { Form } from '@ant-design/compatible';
+import { Form, Input, Select, Tooltip } from 'antd';
 import { FormattedMessage } from 'react-intl';
 import locale from '@/common/locales';
 import IconFont from '@/components/IconFont';
@@ -17,7 +15,7 @@ import {
 import { useFetch } from '@shihengtech/hooks';
 import { GithubImageHostingOption } from './type';
 
-interface Props extends FormComponentProps {
+interface Props {
   info: GithubImageHostingOption;
 }
 
@@ -88,9 +86,12 @@ async function fetchBranches(options: IFetchBranchesOptions): Promise<IBranchSta
   };
 }
 
-export default ({ form: { getFieldDecorator }, info, form }: Props) => {
+export default ({ info }: Props) => {
+  const form = Form.useFormInstance();
   const initInfo: Partial<Props['info']> = info || {};
-  const accessToken = form.getFieldValue('accessToken');
+  const accessToken = Form.useWatch('accessToken', form);
+  const currentRepo = Form.useWatch('repo', form);
+
   const { data: reposResult, loading } = useFetch(() => fetchAllRepos(accessToken), [accessToken], {
     auto: true,
     initialState: {
@@ -102,7 +103,7 @@ export default ({ form: { getFieldDecorator }, info, form }: Props) => {
       };
     },
   });
-  const currentRepo = form.getFieldValue('repo');
+
   const { data: branchResponse, loading: branchLoading } = useFetch(
     () =>
       fetchBranches({
@@ -132,91 +133,89 @@ export default ({ form: { getFieldDecorator }, info, form }: Props) => {
 
   return (
     <Fragment>
-      <Form.Item label={<FormattedMessage id="backend.imageHosting.github.form.accessToken" />}>
-        {getFieldDecorator('accessToken', {
-          initialValue: initInfo.accessToken,
-          rules: [
-            {
-              required: true,
-              message: (
-                <FormattedMessage id="backend.imageHosting.github.form.accessToken.errorMessage" />
-              ),
-            },
-          ],
-        })(
-          <Input
-            onChange={() => form.setFields({ repo: null, branch: null })}
-            suffix={
-              <Tooltip
-                title={
-                  <span
-                    style={{
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {locale.format({
-                      id: 'backend.imageHosting.github.form.generateNewToken',
-                    })}
-                  </span>
-                }
-              >
-                <a
-                  href={GithubClient.generateNewTokenUrl}
-                  target={GithubClient.generateNewTokenUrl}
+      <Form.Item
+        label={<FormattedMessage id="backend.imageHosting.github.form.accessToken" />}
+        name="accessToken"
+        initialValue={initInfo.accessToken}
+        rules={[
+          {
+            required: true,
+            message: (
+              <FormattedMessage id="backend.imageHosting.github.form.accessToken.errorMessage" />
+            ),
+          },
+        ]}
+      >
+        <Input
+          onChange={() => form.setFieldsValue({ repo: undefined, branch: undefined })}
+          suffix={
+            <Tooltip
+              title={
+                <span
+                  style={{
+                    whiteSpace: 'nowrap',
+                  }}
                 >
-                  <IconFont type="key" />
-                </a>
-              </Tooltip>
-            }
-          />
-        )}
+                  {locale.format({
+                    id: 'backend.imageHosting.github.form.generateNewToken',
+                  })}
+                </span>
+              }
+            >
+              <a
+                href={GithubClient.generateNewTokenUrl}
+                target={GithubClient.generateNewTokenUrl}
+              >
+                <IconFont type="key" />
+              </a>
+            </Tooltip>
+          }
+        />
       </Form.Item>
-      <Form.Item label={<FormattedMessage id="backend.imageHosting.github.form.repo" />}>
-        {getFieldDecorator('repo', {
-          initialValue: initInfo.repo,
-          rules: [
-            {
-              required: true,
-              message: <FormattedMessage id="backend.imageHosting.github.form.repo.errorMessage" />,
-            },
-          ],
-        })(
-          <Select
-            showSearch
-            optionFilterProp="label"
-            onChange={() => form.setFields({ branch: null })}
-            disabled={loading || !reposResult?.init}
-            loading={loading}
-            options={reposResult?.repos?.map(o => {
-              return {
-                value: o.full_name,
-                key: o.full_name,
-                label: o.full_name,
-              };
-            })}
-          />
-        )}
+      <Form.Item
+        label={<FormattedMessage id="backend.imageHosting.github.form.repo" />}
+        name="repo"
+        initialValue={initInfo.repo}
+        rules={[
+          {
+            required: true,
+            message: <FormattedMessage id="backend.imageHosting.github.form.repo.errorMessage" />,
+          },
+        ]}
+      >
+        <Select
+          showSearch
+          optionFilterProp="label"
+          onChange={() => form.setFieldsValue({ branch: undefined })}
+          disabled={loading || !reposResult?.init}
+          loading={loading}
+          options={reposResult?.repos?.map(o => {
+            return {
+              value: o.full_name,
+              key: o.full_name,
+              label: o.full_name,
+            };
+          })}
+        />
       </Form.Item>
       <Form.Item
         label={
           <FormattedMessage defaultMessage="Branch" id="backend.imageHosting.github.form.branch" />
         }
+        name="branch"
+        initialValue={initInfo.branch}
       >
-        {getFieldDecorator('branch', {
-          initialValue: initInfo.branch,
-        })(
-          <Select
-            disabled={loading || !reposResult?.init || !branchResponse?.init}
-            placeholder={branchResponse?.default_branch}
-            loading={branchLoading}
-            options={branchResponse?.branches?.map((o: IBranch) => {
-              return {
-                value: o.name,
-                key: o.name,
-              };
-            })}
-          />
-        )}
+        <Select
+          disabled={loading || !reposResult?.init || !branchResponse?.init}
+          placeholder={branchResponse?.default_branch}
+          loading={branchLoading}
+          options={branchResponse?.branches?.map((o: IBranch) => {
+            return {
+              value: o.name,
+              key: o.name,
+            };
+          })}
+        />
       </Form.Item>
       <Form.Item
         label={
@@ -225,15 +224,10 @@ export default ({ form: { getFieldDecorator }, info, form }: Props) => {
             defaultMessage="Save Path"
           />
         }
+        name="savePath"
+        initialValue={initInfo.savePath}
       >
-        {getFieldDecorator('savePath', {
-          initialValue: initInfo.savePath,
-          rules: [
-            {
-              required: false,
-            },
-          ],
-        })(<Input />)}
+        <Input />
       </Form.Item>
     </Fragment>
   );

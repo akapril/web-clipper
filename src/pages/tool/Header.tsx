@@ -1,8 +1,5 @@
 import React, { useEffect, useRef, useMemo } from 'react';
-import { Form } from '@ant-design/compatible';
-import '@ant-design/compatible/assets/index.less';
-import { Input, Button } from 'antd';
-import { FormComponentProps } from '@ant-design/compatible/lib/form';
+import { Form, Input, Button } from 'antd';
 import Section from '@/components/section';
 import { FormattedMessage } from 'react-intl';
 import styles from './index.less';
@@ -14,22 +11,16 @@ import { ServiceMeta, Repository } from '@/common/backend';
 import classNames from 'classnames';
 import localeService from '@/common/locales';
 
-type PageProps = FormComponentProps & {
+type PageProps = {
   pathname: string;
   service: ServiceMeta | null;
   currentRepository?: Repository;
 };
 
 const ClipperHeader: React.FC<PageProps> = props => {
-  const {
-    form: { getFieldDecorator, validateFields, getFieldsValue, setFieldsValue },
-    form,
-    pathname,
-    service,
-    currentRepository,
-  } = props;
-  const formValue = getFieldsValue() as ClipperHeaderForm;
-  const ref = useRef<ClipperHeaderForm>(formValue);
+  const { pathname, service, currentRepository } = props;
+  const [form] = Form.useForm();
+  const ref = useRef<ClipperHeaderForm>({ title: '' });
   const { loading, clipperHeaderForm } = useSelector((g: GlobalStore) => {
     return {
       loading: g.loading.effects[asyncCreateDocument.started.type],
@@ -38,60 +29,61 @@ const ClipperHeader: React.FC<PageProps> = props => {
   }, isEqual);
   const dispatch = useDispatch();
 
+  // Redux → Form 同步
   useEffect(() => {
     if (isEqual(clipperHeaderForm, ref.current)) {
       return;
     }
-    setFieldsValue(clipperHeaderForm);
-  }, [clipperHeaderForm, formValue, setFieldsValue]);
+    form.setFieldsValue(clipperHeaderForm);
+    ref.current = clipperHeaderForm;
+  }, [clipperHeaderForm, form]);
 
-  useEffect(() => {
-    if (isEqual(ref.current, formValue)) {
+  // Form → Redux 同步
+  const handleValuesChange = (_: any, allValues: ClipperHeaderForm) => {
+    if (isEqual(ref.current, allValues)) {
       return;
     }
-    dispatch(updateClipperHeader(formValue));
-    ref.current = formValue;
-  }, [dispatch, formValue]);
+    dispatch(updateClipperHeader(allValues));
+    ref.current = allValues;
+  };
 
   const handleSubmit = () => {
-    validateFields(err => {
-      if (err) {
-        return;
-      }
+    form.validateFields().then(() => {
       dispatch(asyncCreateDocument.started({ pathname }));
-    });
+    }).catch(() => {});
   };
 
   const headerForm = useMemo(() => {
     const HeaderForm = service?.headerForm;
-    return HeaderForm ? <HeaderForm form={form} currentRepository={currentRepository} /> : null;
-  }, [currentRepository, form, service]);
+    // antd 5: headerForm 子组件在 <Form> 内部，自动继承 form context
+    return HeaderForm ? <HeaderForm currentRepository={currentRepository} /> : null;
+  }, [currentRepository, service]);
 
   return (
     <Section
       title={<FormattedMessage id="tool.title" defaultMessage="Title" />}
       className={classNames(styles.header, styles.section)}
     >
-      <Form.Item>
-        {getFieldDecorator('title', {
-          rules: [
-            {
-              required: true,
-              message: <FormattedMessage id="tool.title.required" />,
-            },
-          ],
-        })(<Input placeholder="Please Input Title" />)}
-      </Form.Item>
-      {headerForm}
+      <Form
+        form={form}
+        onValuesChange={handleValuesChange}
+        initialValues={clipperHeaderForm}
+      >
+        <Form.Item
+          name="title"
+          rules={[{ required: true, message: <FormattedMessage id="tool.title.required" /> }]}
+        >
+          <Input placeholder="Please Input Title" />
+        </Form.Item>
+        {headerForm}
+      </Form>
       <Button
         className={styles.saveButton}
         size="large"
         type="primary"
         title={
           !currentRepository
-            ? localeService.format({
-                id: 'tool.saveButton.noRepository',
-              })
+            ? localeService.format({ id: 'tool.saveButton.noRepository' })
             : ''
         }
         onClick={handleSubmit}
@@ -105,4 +97,4 @@ const ClipperHeader: React.FC<PageProps> = props => {
   );
 };
 
-export default Form.create<PageProps>()(ClipperHeader);
+export default ClipperHeader;

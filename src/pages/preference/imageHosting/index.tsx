@@ -8,19 +8,14 @@ import { bindActionCreators, Dispatch } from 'redux';
 import { connect } from 'dva';
 import styles from './index.less';
 import AddImageHosting from './form/addImageHosting';
-import { FormComponentProps } from '@ant-design/compatible/lib/form';
 import ImageHostingListItem from 'components/imagehostingListItem';
 import { PlusOutlined } from '@ant-design/icons';
-import { Form } from '@ant-design/compatible';
-import '@ant-design/compatible/assets/index.less';
 import { Button } from 'antd';
 import { GlobalStore, ImageHosting } from 'common/types';
 import { FormattedMessage } from 'react-intl';
-import { asyncDeleteAccount } from '@/actions/account';
 
 const useActions = {
   asyncAddImageHosting: asyncAddImageHosting.started,
-  asyncDeleteAccount: asyncDeleteAccount.started,
   asyncDeleteImageHosting: asyncDeleteImageHosting.started,
   asyncEditImageHosting: asyncEditImageHosting.started,
 };
@@ -40,8 +35,7 @@ type PageState = {
 
 type PageStateProps = ReturnType<typeof mapStateToProps>;
 type PageDispatchProps = typeof useActions;
-type PageOwnProps = {};
-type PageProps = PageStateProps & PageDispatchProps & PageOwnProps & FormComponentProps;
+type PageProps = PageStateProps & PageDispatchProps;
 const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators<PageDispatchProps, PageDispatchProps>(useActions, dispatch);
 
@@ -54,42 +48,29 @@ class Page extends React.Component<PageProps, PageState> {
     };
   }
 
-  handleAddAccount = () => {
-    this.props.form.validateFields((error, values) => {
-      if (error) {
-        return;
-      }
-      const { type, remark, ...info } = values;
-      this.props.asyncAddImageHosting({
-        type,
-        remark,
-        info,
-        closeModal: this.closeModalAndResetForm,
-      });
+  handleAddAccount = (values: any) => {
+    const { type, remark, ...info } = values;
+    this.props.asyncAddImageHosting({
+      type,
+      remark,
+      info,
+      closeModal: this.closeModal,
     });
   };
 
-  closeModalAndResetForm = () => {
-    this.setState(
-      {
-        currentImageHosting: null,
-        showAddImageHostingModal: false,
-      },
-      () => this.props.form.resetFields()
-    );
+  closeModal = () => {
+    this.setState({
+      currentImageHosting: null,
+      showAddImageHostingModal: false,
+    });
   };
 
-  handleEditAccount = (id: string) => {
-    this.props.form.validateFields((error, values) => {
-      if (error) {
-        return;
-      }
-      const { type, remark, ...info } = values;
-      this.props.asyncEditImageHosting({
-        id,
-        value: { type, remark, info },
-        closeModal: this.closeModalAndResetForm,
-      });
+  handleEditAccount = (id: string, values: any) => {
+    const { type, remark, ...info } = values;
+    this.props.asyncEditImageHosting({
+      id,
+      value: { type, remark, info },
+      closeModal: this.closeModal,
     });
   };
 
@@ -132,7 +113,7 @@ class Page extends React.Component<PageProps, PageState> {
   };
 
   render() {
-    const { form, imageHostingServicesMeta } = this.props;
+    const { imageHostingServicesMeta } = this.props;
     const { showAddImageHostingModal, currentImageHosting } = this.state;
 
     return (
@@ -141,8 +122,7 @@ class Page extends React.Component<PageProps, PageState> {
           currentImageHosting={currentImageHosting}
           imageHostingServicesMeta={imageHostingServicesMeta as any}
           visible={showAddImageHostingModal}
-          form={form}
-          onCancel={this.closeModalAndResetForm}
+          onCancel={this.closeModal}
           onAddAccount={this.handleAddAccount}
           onEditAccount={this.handleEditAccount}
         />
@@ -160,8 +140,4 @@ class Page extends React.Component<PageProps, PageState> {
   }
 }
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-  //@ts-ignore
-)(Form.create<PageProps>()(Page));
+export default connect(mapStateToProps, mapDispatchToProps)(Page);
