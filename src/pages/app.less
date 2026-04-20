@@ -4,3 +4,91 @@ body {
     Hiragino Sans GB, Microsoft YaHei, Helvetica Neue, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/* 暗色主题全局覆盖 */
+body.dark-mode {
+  color: #e0e0e0;
+
+  /* antd 组件覆盖 */
+  .ant-card,
+  .ant-modal-content,
+  .ant-modal-header,
+  .ant-modal-body,
+  .ant-list-item,
+  .ant-list-item-meta-title,
+  .ant-list-item-meta-description,
+  .ant-form-item-label > label,
+  .ant-select-selector,
+  .ant-input,
+  .ant-input-password,
+  .ant-input-affix-wrapper,
+  .ant-input-number,
+  .ant-input-number-input {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0 !important;
+    border-color: #444 !important;
+  }
+
+  .ant-select-dropdown,
+  .ant-dropdown-menu,
+  .ant-tooltip-inner,
+  .ant-message-notice-content {
+    background-color: #2a2a2a !important;
+    color: #e0e0e0 !important;
+  }
+
+  .ant-select-item,
+  .ant-dropdown-menu-item {
+    color: #e0e0e0 !important;
+  }
+  .ant-select-item-option-active,
+  .ant-select-item-option-selected,
+  .ant-dropdown-menu-item:hover {
+    background-color: #383838 !important;
+  }
+
+  .ant-btn {
+    border-color: #555 !important;
+    color: #e0e0e0 !important;
+    background-color: #2a2a2a !important;
+  }
+  .ant-btn-primary {
+    background-color: #1668dc !important;
+    border-color: #1668dc !important;
+    color: #fff !important;
+  }
+  .ant-btn-primary:hover {
+    background-color: #1554b0 !important;
+  }
+
+  .ant-switch {
+    background-color: #555 !important;
+  }
+  .ant-switch-checked {
+    background-color: #1668dc !important;
+  }
+
+  .ant-tree {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0 !important;
+  }
+  .ant-tree-node-content-wrapper:hover {
+    background-color: #383838 !important;
+  }
+
+  .ant-notification-notice {
+    background-color: #2a2a2a !important;
+    color: #e0e0e0 !important;
+  }
+
+  .ant-tabs-tab {
+    color: #aaa !important;
+  }
+  .ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: #1668dc !important;
+  }
+
+  a {
+    color: #4ea4f5;
+  }
+}

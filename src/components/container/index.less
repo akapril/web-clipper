@@ -43,3 +43,18 @@
   left: 0px;
   background: @modal-mask-bg;
 }
+
+/* 暗色模式容器样式 */
+:global(body.dark-mode) {
+  .toolContainer {
+    background: #1e1e1e;
+    color: #e0e0e0;
+  }
+  .mainContainer {
+    box-shadow: rgba(0, 0, 0, 0.5) 0px 0px 12px 0px;
+  }
+  .editorContainer {
+    border-color: #444;
+    box-shadow: rgba(0, 0, 0, 0.5) 0px 0px 12px 0px;
+  }
+}
