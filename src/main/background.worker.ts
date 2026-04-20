@@ -63,36 +63,43 @@ function main() {
       await contentScriptService.checkStatus();
       contentScriptService.toggle();
     } catch (_e) {
-      // content script 未注入（页面在扩展安装前已打开），尝试自动注入
-      try {
-        // 优先使用 chrome.scripting API（MV3）
-        if (chrome.scripting?.executeScript) {
+      // content script 未注入，按优先级尝试三种方案
+
+      // 方案1：chrome.scripting API（MV3）
+      let injected = false;
+      if (chrome.scripting?.executeScript) {
+        try {
           await chrome.scripting.executeScript({
             target: { tabId: tab.id },
             files: [contentScriptFile],
           });
-        } else if ((chrome.tabs as any).executeScript) {
-          // 兼容旧版 Firefox MV2 API
-          await new Promise<void>((resolve, reject) => {
-            (chrome.tabs as any).executeScript(tab.id, { file: contentScriptFile }, () => {
-              if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-              } else {
-                resolve();
-              }
-            });
-          });
-        } else {
-          throw new Error('No scripting API available');
+          await new Promise(r => setTimeout(r, 500));
+          await contentScriptService.checkStatus();
+          contentScriptService.toggle();
+          injected = true;
+        } catch (_e2) {
+          // scripting API 失败，继续尝试下一个方案
         }
-        // 注入后等待 content script 初始化
-        await new Promise(r => setTimeout(r, 500));
-        await contentScriptService.checkStatus();
-        contentScriptService.toggle();
-      } catch (retryError) {
-        // 注入也失败（如 about:、resource:// 等特殊页面），显示提示
+      }
+
+      // 方案2：自动刷新页面（最可靠，manifest 声明的 content_scripts 会在页面加载时自动注入）
+      if (!injected) {
+        try {
+          await chrome.tabs.reload(tab.id);
+          // 等待页面刷新和 content script 初始化
+          await new Promise(r => setTimeout(r, 2000));
+          await contentScriptService.checkStatus();
+          contentScriptService.toggle();
+          injected = true;
+        } catch (_e3) {
+          // 刷新后仍失败
+        }
+      }
+
+      // 方案3：都失败了，显示提示（如 about:、chrome:// 等特殊页面）
+      if (!injected) {
         chrome.tabs.create({
-          url: `${chrome.runtime.getURL(getResourcePath('error.html'))}?message=${(retryError as Error).message}`,
+          url: `${chrome.runtime.getURL(getResourcePath('error.html'))}`,
         });
       }
     }
