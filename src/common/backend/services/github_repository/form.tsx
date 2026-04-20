@@ -1,9 +1,6 @@
 import { KeyOutlined } from '@ant-design/icons';
-import { Form } from '@ant-design/compatible';
-import '@ant-design/compatible/assets/index.less';
-import { Input, Select, Tooltip } from 'antd';
-import { FormComponentProps } from '@ant-design/compatible/lib/form';
-import React, { Fragment } from 'react';
+import { Form, Input, Select, Tooltip } from 'antd';
+import React from 'react';
 import { GithubBackendServiceConfig } from './interface';
 import { FormattedMessage } from 'react-intl';
 import locale from '@/common/locales';
@@ -34,11 +31,7 @@ const visibilityOptions = [
   },
 ];
 
-const GithubForm: React.FC<GithubFormProps & FormComponentProps> = ({
-  form: { getFieldDecorator },
-  info,
-  verified,
-}) => {
+const GithubForm: React.FC<GithubFormProps> = ({ info, verified }) => {
   const disabled = verified || !!info;
   let initAccessToken;
   let visibility;
@@ -49,59 +42,55 @@ const GithubForm: React.FC<GithubFormProps & FormComponentProps> = ({
     savePath = info.savePath;
   }
   return (
-    <Fragment>
-      <Form.Item label={<FormattedMessage id="backend.services.github.form.visibility" />}>
-        {getFieldDecorator('visibility', {
-          initialValue: visibility,
-        })(
-          <Select allowClear>
-            {visibilityOptions.map(o => (
-              <Select.Option value={o.value} key={o.value}>
-                {o.label}
-              </Select.Option>
-            ))}
-          </Select>
-        )}
+    <>
+      <Form.Item label={<FormattedMessage id="backend.services.github.form.visibility" />} name="visibility" initialValue={visibility}>
+        <Select allowClear>
+          {visibilityOptions.map(o => (
+            <Select.Option value={o.value} key={o.value}>
+              {o.label}
+            </Select.Option>
+          ))}
+        </Select>
       </Form.Item>
-      <Form.Item label="AccessToken">
-        {getFieldDecorator('accessToken', {
-          initialValue: initAccessToken,
-          rules: [
-            {
-              required: true,
-              message: (
-                <FormattedMessage
-                  id="backend.services.github.accessToken.message"
-                  defaultMessage="AccessToken is required"
-                />
-              ),
-            },
-          ],
-        })(
-          <Input
-            disabled={disabled}
-            suffix={
-              <Tooltip
-                title={
-                  <span
-                    style={{
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {locale.format({
-                      id: 'backend.services.github.form.GenerateNewToken',
-                      defaultMessage: 'Generate new token',
-                    })}
-                  </span>
-                }
-              >
-                <a href={GenerateNewTokenUrl} target={GenerateNewTokenUrl}>
-                  <KeyOutlined />
-                </a>
-              </Tooltip>
-            }
-          />
-        )}
+      <Form.Item
+        label="AccessToken"
+        name="accessToken"
+        initialValue={initAccessToken}
+        rules={[
+          {
+            required: true,
+            message: (
+              <FormattedMessage
+                id="backend.services.github.accessToken.message"
+                defaultMessage="AccessToken is required"
+              />
+            ),
+          },
+        ]}
+      >
+        <Input
+          disabled={disabled}
+          suffix={
+            <Tooltip
+              title={
+                <span
+                  style={{
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {locale.format({
+                    id: 'backend.services.github.form.GenerateNewToken',
+                    defaultMessage: 'Generate new token',
+                  })}
+                </span>
+              }
+            >
+              <a href={GenerateNewTokenUrl} target={GenerateNewTokenUrl}>
+                <KeyOutlined />
+              </a>
+            </Tooltip>
+          }
+        />
       </Form.Item>
       <Form.Item
         label={
@@ -110,34 +99,32 @@ const GithubForm: React.FC<GithubFormProps & FormComponentProps> = ({
             defaultMessage="Save Path"
           />
         }
-      >
-        {getFieldDecorator('savePath', {
-          initialValue: savePath,
-          rules: [
-            {
-              required: false,
-            },
-            {
-              validator: (_r: unknown, value: string, callback: (message?: string) => {}) => {
-                if (typeof value === 'string') {
-                  if (value.startsWith('/')) {
-                    return callback('path cannot start with a slash');
-                  }
+        name="savePath"
+        initialValue={savePath}
+        rules={[
+          {
+            required: false,
+          },
+          {
+            validator: (_r: unknown, value: string) => {
+              if (typeof value === 'string') {
+                if (value.startsWith('/')) {
+                  return Promise.reject('path cannot start with a slash');
                 }
-                return callback();
-              },
+              }
+              return Promise.resolve();
             },
-          ],
-        })(
-          <Input
-            placeholder={locale.format({
-              id: 'backend.services.github.form.storageLocation.code.savePathPlaceHolder',
-              defaultMessage: 'Only takes effect when saving to code.',
-            })}
-          />
-        )}
+          },
+        ]}
+      >
+        <Input
+          placeholder={locale.format({
+            id: 'backend.services.github.form.storageLocation.code.savePathPlaceHolder',
+            defaultMessage: 'Only takes effect when saving to code.',
+          })}
+        />
       </Form.Item>
-    </Fragment>
+    </>
   );
 };
 

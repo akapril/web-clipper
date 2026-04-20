@@ -1,14 +1,11 @@
-import { Form } from '@ant-design/compatible';
-import '@ant-design/compatible/assets/index.less';
-import { FormComponentProps } from '@ant-design/compatible/lib/form';
-import { Input, Tooltip } from 'antd';
-import React, { Fragment } from 'react';
+import { Form, Input, Tooltip } from 'antd';
+import React from 'react';
 import localeService from '@/common/locales';
 
-const HeaderForm: React.FC<FormComponentProps> = ({ form: { getFieldDecorator } }) => {
+const HeaderForm: React.FC = () => {
   return (
-    <Fragment>
-      <Form.Item>
+    <>
+      <Form.Item name="tags" initialValue="">
         <Tooltip
           trigger={['focus']}
           title={localeService.format({
@@ -17,20 +14,16 @@ const HeaderForm: React.FC<FormComponentProps> = ({ form: { getFieldDecorator } 
           })}
           placement="topLeft"
         >
-          {getFieldDecorator('tags', {
-            initialValue: '',
-          })(
-            <Input
-              autoComplete="off"
-              placeholder={localeService.format({
-                id: 'backend.services.obsidian.headerForm.tags',
-                defaultMessage: 'Tags (comma separated)',
-              })}
-            />
-          )}
+          <Input
+            autoComplete="off"
+            placeholder={localeService.format({
+              id: 'backend.services.obsidian.headerForm.tags',
+              defaultMessage: 'Tags (comma separated)',
+            })}
+          />
         </Tooltip>
       </Form.Item>
-    </Fragment>
+    </>
   );
 };
 

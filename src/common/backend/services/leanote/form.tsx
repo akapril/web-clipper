@@ -1,8 +1,5 @@
-import { Form } from '@ant-design/compatible';
-import '@ant-design/compatible/assets/index.less';
-import { Input } from 'antd';
-import { FormComponentProps } from '@ant-design/compatible/lib/form';
-import React, { Fragment } from 'react';
+import { Form, Input } from 'antd';
+import React from 'react';
 import { LeanoteBackendServiceConfig } from '../../clients/leanote/interface';
 import { FormattedMessage } from 'react-intl';
 import i18n from '@/common/locales';
@@ -13,12 +10,8 @@ interface OneNoteProps {
   info?: LeanoteBackendServiceConfig;
 }
 
-const ExtraForm: React.FC<OneNoteProps & FormComponentProps> = props => {
-  const {
-    form: { getFieldDecorator },
-    form,
-    info,
-  } = props;
+const ExtraForm: React.FC<OneNoteProps> = ({ info }) => {
+  const form = Form.useFormInstance();
   const { verified, handleAuthentication, formRules } = useOriginForm({
     form,
     initStatus: !!info,
@@ -30,54 +23,52 @@ const ExtraForm: React.FC<OneNoteProps & FormComponentProps> = props => {
   }
   let editMode = info ? true : false;
   return (
-    <Fragment>
+    <>
       <Form.Item
         label={
           <FormattedMessage id="backend.services.confluence.form.origin" defaultMessage="Origin" />
         }
+        name="leanote_host"
+        initialValue={info?.leanote_host}
+        rules={formRules}
       >
-        {form.getFieldDecorator('leanote_host', {
-          initialValue: info?.leanote_host,
-          rules: formRules,
-        })(
-          <Input.Search
-            enterButton={
-              <FormattedMessage
-                id="backend.services.confluence.form.authentication"
-                defaultMessage="Authentication"
-              />
-            }
-            onSearch={handleAuthentication}
-            disabled={verified}
-          />
-        )}
+        <Input.Search
+          enterButton={
+            <FormattedMessage
+              id="backend.services.confluence.form.authentication"
+              defaultMessage="Authentication"
+            />
+          }
+          onSearch={handleAuthentication}
+          disabled={verified}
+        />
       </Form.Item>
       <Form.Item
         label={<FormattedMessage id="backend.services.leanote.form.email" defaultMessage="Email" />}
+        name="email"
+        initialValue={initData.email}
+        rules={[
+          {
+            required: true,
+            message: i18n.format({
+              id: 'backend.services.leanote.form.email',
+              defaultMessage: 'Email is required.',
+            }),
+          },
+        ]}
       >
-        {getFieldDecorator('email', {
-          initialValue: initData.email,
-          rules: [
-            {
-              required: true,
-              message: i18n.format({
-                id: 'backend.services.leanote.form.email',
-                defaultMessage: 'Email is required.',
-              }),
-            },
-          ],
-        })(<Input disabled={editMode} />)}
+        <Input disabled={editMode} />
       </Form.Item>
       <Form.Item
         label={
           <FormattedMessage id="backend.services.leanote.form.pwd" defaultMessage="Password" />
         }
+        name="pwd"
+        initialValue={initData.pwd}
       >
-        {getFieldDecorator('pwd', {
-          initialValue: initData.pwd,
-        })(<Input disabled={editMode} type="password" />)}
+        <Input disabled={editMode} type="password" />
       </Form.Item>
-    </Fragment>
+    </>
   );
 };
 
