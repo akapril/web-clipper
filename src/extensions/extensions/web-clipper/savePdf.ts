@@ -71,14 +71,20 @@ export default new TextExtension<PdfInfo>(
           const remotePath = await imageService.uploadImage({ data: dataUrl });
           message.success('PDF 已保存为附件');
 
-          // 生成包含 PDF 引用的笔记
+          // 根据路径格式判断引用方式
+          // 本地路径（Obsidian/SiYuan 等）用 wikilink，远程 URL 用 markdown 链接
+          const isLocalPath = !remotePath.startsWith('http');
+          const attachmentRef = isLocalPath
+            ? `![[${remotePath}]]`
+            : `[${fileName}](${remotePath})`;
+
           const now = new Date().toISOString().split('T')[0];
           return [
             `# ${result.title}`,
             '',
             `- 来源: [${result.title}](${result.url})`,
             `- 日期: ${now}`,
-            `- 附件: ![[${remotePath}]]`,
+            `- 附件: ${attachmentRef}`,
             '',
             '---',
             '',
