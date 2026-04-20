@@ -27,12 +27,31 @@ module.exports = {
   optimization: {
     splitChunks: {
       cacheGroups: {
+        // 核心框架：React + Ant Design
         vendor: {
-          test: /[\\/]node_modules[\\/](react\/|react-dom|antd|lodash|@ant-design)[\\/]/,
+          test: /[\\/]node_modules[\\/](react\/|react-dom|antd|@ant-design)[\\/]/,
           name: 'vendor',
+          priority: 10,
           chunks(chunk) {
             return chunk.name !== 'background';
           },
+        },
+        // 编辑器相关：CodeMirror + HyperMD
+        editor: {
+          test: /[\\/]node_modules[\\/](codemirror|hypermd)[\\/]/,
+          name: 'editor',
+          priority: 8,
+          chunks(chunk) {
+            return chunk.name === 'tool';
+          },
+        },
+        // 表单库（Formily）
+        formily: {
+          test: /[\\/]node_modules[\\/](@formily)[\\/]/,
+          name: 'formily',
+          priority: 7,
+          chunks: 'all',
+          enforce: true,
         },
       },
     },
@@ -179,7 +198,8 @@ module.exports = {
     new HtmlWebpackPlugin({
       title: 'Web Clipper',
       filename: resolve('dist/chrome/tool.html'),
-      chunks: ['tool'],
+      chunks: ['vendor', 'formily', 'editor', 'tool'],
+      chunksSortMode: 'manual',
       template: 'src/index.html',
     }),
   ].filter((plugin) => !!plugin),

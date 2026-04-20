@@ -49,7 +49,7 @@ async function getChromeManifest() {
     },
     web_accessible_resources: [
       {
-        resources: ['tool.html', 'tool.js', 'vendor.js'],
+        resources: ['tool.html', 'tool.js', 'vendor.js', 'formily.js', 'editor.js'],
         matches: ['<all_urls>'],
       },
     ],
@@ -93,7 +93,7 @@ async function getFirefoxManifest() {
     },
     web_accessible_resources: [
       {
-        resources: ['chrome/tool.html', 'chrome/tool.js', 'chrome/vendor.js'],
+        resources: ['chrome/tool.html', 'chrome/tool.js', 'chrome/vendor.js', 'chrome/common.js', 'chrome/editor.js'],
         matches: ['<all_urls>'],
       },
     ],
