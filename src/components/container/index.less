@@ -1,21 +1,44 @@
 .mainContainer {
   position: fixed;
-  right: 10px;
-  top: 10px;
-  box-shadow: rgba(0, 0, 0, 0.2) 0px 0px 12px 0px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2147483647;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .toolContainer {
-  width: 324px;
-  height: auto;
-  background: #fff;
-  padding: 10px;
+  width: 540px;
+  max-height: 85vh;
+  overflow: hidden;
+  padding: 0;
 }
+
 .closeButton {
-  position: absolute;
-  right: 10px;
-  top: 10px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.closeButton:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.editorContainer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2147483646;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .centerContainer {
@@ -25,19 +48,10 @@
   width: 100%;
   height: 100%;
 }
-.editorContainer {
-  position: absolute;
-  right: 350px;
-  top: 0;
-  box-shadow: rgba(0, 0, 0, 0.2) 0px 0px 12px 0px;
-  border: 2px solid #dddddd;
-}
 
 .mask {
   position: fixed;
-  right: 0px;
-  top: 0px;
-  bottom: 0px;
-  left: 0px;
-  background: rgba(0, 0, 0, 0.45);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 2147483646;
 }
