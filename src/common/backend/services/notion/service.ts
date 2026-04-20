@@ -60,7 +60,10 @@ export default class NotionDocumentService implements DocumentService {
     if (!this.userContent) {
       this.userContent = await this.getUserContent();
     }
-    const user = this.userContent.recordMap.notion_user;
+    const user = this.userContent?.recordMap?.notion_user;
+    if (!user || Object.keys(user).length === 0) {
+      throw new Error('无法获取 Notion 用户信息，请确认已登录 notion.so');
+    }
     const userInfo = Object.values(user)[0];
     const { email, profile_photo, name } = userInfo.value;
     return {
@@ -76,14 +79,34 @@ export default class NotionDocumentService implements DocumentService {
       this.userContent = await this.getUserContent();
     }
 
-    const userId = Object.keys(this.userContent.recordMap.notion_user)[0] as string;
-    const spaces = (await this.getSpaces(userId)) as any;
+    const notionUser = this.userContent?.recordMap?.notion_user;
+    if (!notionUser || Object.keys(notionUser).length === 0) {
+      throw new Error('无法获取 Notion 用户信息，请确认已登录 notion.so');
+    }
+    const userId = Object.keys(notionUser)[0] as string;
+    let spaces: any[];
+    try {
+      const spacePointers = await this.getSpaces(userId);
+      spaces = Array.isArray(spacePointers) ? spacePointers : Object.values(spacePointers || {});
+    } catch (e) {
+      throw new Error('获取 Notion 空间列表失败，请刷新 notion.so 后重试');
+    }
+
+    if (!spaces || spaces.length === 0) {
+      throw new Error('未找到 Notion 空间，请确认账户中有可用的工作空间');
+    }
+
     const result: Array<NotionRepository[]> = await Promise.all(
-      Object.keys(spaces).map(async (p) => {
-        const space = spaces[p];
-        const recentPages = await this.getRecentPageVisits(space.spaceId, userId);
-        const spaceName = await this.getSpaceName(space.spaceId);
-        return this.loadSpace(space.spaceId, spaceName, recentPages);
+      spaces.map(async (space: any) => {
+        if (!space?.spaceId) return [];
+        try {
+          const recentPages = await this.getRecentPageVisits(space.spaceId, userId);
+          const spaceName = await this.getSpaceName(space.spaceId);
+          return this.loadSpace(space.spaceId, spaceName, recentPages);
+        } catch (_e) {
+          // 单个空间加载失败不影响其他空间
+          return [];
+        }
       })
     );
 
@@ -92,41 +115,44 @@ export default class NotionDocumentService implements DocumentService {
   };
 
   getSpaces = async (userId: string) => {
-    const response = await this.requestWithCookie.post<{
-      users: {
-        [id: string]: {
-          user_root: {
-            [id: string]: {
-              value: {
-                space_view_pointers: [
-                  {
-                    id: string;
-                    table: string;
-                    spaceId: string;
-                  }
-                ]
-              }
-            };
-          }
-          space: any;
-        };
-      };
-    }>('/api/v3/getSpacesInitial');
-    return response.data.users[userId].user_root[userId].value.space_view_pointers;
+    const response = await this.requestWithCookie.post<any>('/api/v3/getSpacesInitial');
+    const data = response.data;
+
+    // 兼容多种 API 响应结构
+    // 结构1: data.users[userId].user_root[userId].value.space_view_pointers
+    // 结构2: data[userId].space（旧版）
+    try {
+      const userRoot = data?.users?.[userId]?.user_root?.[userId];
+      if (userRoot?.value?.space_view_pointers) {
+        return userRoot.value.space_view_pointers;
+      }
+    } catch (_e) {}
+
+    // 回退：从 recordMap.space 中提取
+    try {
+      const spaces = data?.recordMap?.space || data?.[userId]?.space;
+      if (spaces) {
+        return Object.keys(spaces).map(spaceId => ({
+          id: spaceId,
+          spaceId,
+          table: 'space',
+        }));
+      }
+    } catch (_e) {}
+
+    throw new Error('无法解析 Notion 空间数据');
   };
 
   getSpaceName = async (spaceId: string) => {
-    const response = await this.requestWithCookie.post<{
-      results: [
-        {
-          name: string;
-        }
-      ]
-    }>('api/v3/getPublicSpaceData', {
-      spaceIds: [spaceId],
-      type: 'space-ids'
-    });
-    return response.data.results[0].name;
+    try {
+      const response = await this.requestWithCookie.post<any>('api/v3/getPublicSpaceData', {
+        spaceIds: [spaceId],
+        type: 'space-ids'
+      });
+      return response.data?.results?.[0]?.name || spaceId;
+    } catch (_e) {
+      return spaceId;
+    }
   }
 
   createDocument = async ({
@@ -179,9 +205,17 @@ export default class NotionDocumentService implements DocumentService {
       this.userContent = await this.getUserContent();
     }
 
-    const userId = Object.keys(this.userContent.recordMap.notion_user)[0] as string;
-    const spaces = (await this.getSpaces(userId)) as any;
-    return spaces[0].spaceId;
+    const notionUser = this.userContent?.recordMap?.notion_user;
+    if (!notionUser || Object.keys(notionUser).length === 0) {
+      throw new Error('无法获取用户信息');
+    }
+    const userId = Object.keys(notionUser)[0] as string;
+    const spaces = await this.getSpaces(userId);
+    const spaceArr = Array.isArray(spaces) ? spaces : Object.values(spaces || {});
+    if (!spaceArr || spaceArr.length === 0) {
+      throw new Error('未找到可用的 Notion 空间');
+    }
+    return spaceArr[0].spaceId;
   };
 
   createEmptyFile = async (repository: NotionRepository, title: string) => {
@@ -360,7 +394,9 @@ export default class NotionDocumentService implements DocumentService {
 
     return pages
       .map((pageId): NotionRepository | null => {
-        const value = response.data.recordMap.block[pageId]!.value;
+        const block = response.data.recordMap?.block?.[pageId];
+        if (!block?.value) return null;
+        const value = block.value;
         if (value.type === PAGE && !!value.properties && !!value.properties.title) {
           return {
             id: value.id,
@@ -401,8 +437,18 @@ export default class NotionDocumentService implements DocumentService {
   }
 
   private getUserContent = async () => {
-    const response = await this.requestWithCookie.post<NotionUserContent>('api/v3/loadUserContent');
-    return response.data;
+    try {
+      const response = await this.requestWithCookie.post<NotionUserContent>('api/v3/loadUserContent');
+      if (!response.data?.recordMap) {
+        throw new Error('Notion 返回数据格式异常');
+      }
+      return response.data;
+    } catch (error: any) {
+      if (error instanceof UnauthorizedError) {
+        throw error;
+      }
+      throw new Error(`Notion 连接失败: ${error.message || '网络错误，请确认已登录 notion.so'}`);
+    }
   };
 
   /**
