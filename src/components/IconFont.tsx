@@ -1,5 +1,6 @@
 import React from 'react';
-import { createFromIconfontCN, QuestionCircleOutlined } from '@ant-design/icons';
+import { createFromIconfontCN } from '@ant-design/icons';
+import * as AntdIcons from '@ant-design/icons';
 import Container from 'typedi';
 import { IConfigService } from '@/service/common/config';
 import { Observer, useObserver } from 'mobx-react';
@@ -11,6 +12,20 @@ interface IconFontProps {
   onClick?: React.MouseEventHandler;
 }
 
+/**
+ * 将 kebab-case 图标名转为 PascalCase + Outlined 后缀
+ * 例如: "file-pdf" → "FilePdfOutlined", "copy" → "CopyOutlined"
+ */
+function getAntdIconComponent(type: string): React.ComponentType<any> | null {
+  const pascal = type
+    .split('-')
+    .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+    .join('');
+  const iconName = `${pascal}Outlined`;
+  const icon = (AntdIcons as any)[iconName];
+  return icon || null;
+}
+
 const IconFont: React.FC<IconFontProps> = (props) => {
   const configService = Container.get(IConfigService);
   const RemoteIconFont = useObserver(() => {
@@ -19,14 +34,20 @@ const IconFont: React.FC<IconFontProps> = (props) => {
   return (
     <Observer>
       {() => {
-        if (!configService.remoteIconSet.has(props.type)) {
-          // antd 5 没有通用 Icon 组件，对未知图标使用默认图标
-          return <QuestionCircleOutlined style={props.style} className={props.className} onClick={props.onClick} />;
-        }
         if (!props.type) {
-          throw new Error('Type is required');
+          return null;
         }
-        return <RemoteIconFont {...props} type={props.type!} />;
+        // 优先使用 iconfont 自定义图标
+        if (configService.remoteIconSet.has(props.type)) {
+          return <RemoteIconFont {...props} type={props.type} />;
+        }
+        // 回退到 antd 内置图标
+        const AntdIcon = getAntdIconComponent(props.type);
+        if (AntdIcon) {
+          return <AntdIcon style={props.style} className={props.className} onClick={props.onClick} />;
+        }
+        // 都没有，直接渲染文字
+        return <span style={props.style} className={props.className} onClick={props.onClick}>{props.type}</span>;
       }}
     </Observer>
   );

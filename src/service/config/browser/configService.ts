@@ -23,8 +23,8 @@ class BrowserConfigService implements IConfigService {
 
   load = async () => {
     const iconsFile = await request.get('./icon.js');
-    const matchResult: string[] = iconsFile.match(/id="([A-Za-z]+)"/g) || [];
-    const remoteIcons = matchResult.map((o) => o.match(/id="([A-Za-z]+)"/)![1]);
+    const matchResult: string[] = iconsFile.match(/id="([A-Za-z0-9_-]+)"/g) || [];
+    const remoteIcons = matchResult.map((o) => o.match(/id="([A-Za-z0-9_-]+)"/)![1]);
     runInAction(() => {
       remoteIcons.forEach((icon) => {
         this.remoteIconSet.add(icon);
