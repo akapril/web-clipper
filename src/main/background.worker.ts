@@ -77,9 +77,34 @@ function main() {
       return;
     }
 
-    // Firefox PDF 特殊处理：重定向到在线 viewer 后提示用户重新点击
+    // Firefox PDF 特殊处理：重定向到在线 viewer，加载完成后自动弹出剪藏面板
     if (isFirefox && isPdfUrl(tab.url)) {
-      redirectFirefoxPdf(tab.id, tab.url!);
+      const tabId = tab.id;
+      const viewerUrl = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(tab.url!)}`;
+      chrome.tabs.update(tabId, { url: viewerUrl });
+      // 等待 viewer 页面加载完成
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => {
+          chrome.tabs.onUpdated.removeListener(listener);
+          resolve();
+        }, 20000);
+        const listener = (updatedTabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+          if (updatedTabId === tabId && changeInfo.status === 'complete') {
+            chrome.tabs.onUpdated.removeListener(listener);
+            clearTimeout(timeout);
+            resolve();
+          }
+        };
+        chrome.tabs.onUpdated.addListener(listener);
+      });
+      // 等待 content script 初始化后自动弹出
+      await new Promise(r => setTimeout(r, 1000));
+      try {
+        await contentScriptService.checkStatus();
+        contentScriptService.toggle();
+      } catch (_e) {
+        // 如果还是失败，用户手动再点一次即可
+      }
       return;
     }
 
