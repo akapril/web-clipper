@@ -4,7 +4,7 @@ import { FormattedMessage } from 'react-intl';
 import { SerializedExtensionInfo } from '@/extensions/common';
 import IconFont from '@/components/IconFont';
 import { SettingOutlined } from '@ant-design/icons';
-import { Form, FormItem, Input as FormInput, Select as FormSelect } from '@formily/antd';
+import { Form, FormItem, Input as FormInput, Select as FormSelect } from '@formily/antd-v5';
 import { createForm, onFormValuesChange } from '@formily/core';
 import { createSchemaField, useForm } from '@formily/react';
 import { toJS } from 'mobx';

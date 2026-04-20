@@ -1,10 +1,13 @@
 import React from 'react';
 import { IntlProvider } from 'react-intl';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, theme } from 'antd';
 import { connect } from 'dva';
+import { useObserver } from 'mobx-react';
+import Container from 'typedi';
 import { localesMap } from '@/common/locales';
 import { localeProvider } from '@/common/locales/antd';
 import { GlobalStore } from '@/common/types';
+import { IPreferenceService } from '@/service/common/preference';
 
 const mapStateToProps = ({ userPreference: { locale } }: GlobalStore) => {
   return {
@@ -14,14 +17,22 @@ const mapStateToProps = ({ userPreference: { locale } }: GlobalStore) => {
 type PageStateProps = ReturnType<typeof mapStateToProps>;
 
 const LocalWrapper: React.FC<PageStateProps> = ({ children, locale }) => {
-  // 暗色主题暂时禁用，antd 4.x 在 iframe 内无法可靠覆盖样式
-  // 后续升级 antd 5.x（支持 CSS-in-JS 主题切换）后重新启用
   const language = locale;
   const model = (localesMap.get(language) || localesMap.get('en-US'))!;
+
+  // 通过 iconColor 偏好检测暗色模式
+  const iconColor = useObserver(() => {
+    return Container.get(IPreferenceService).userPreference.iconColor;
+  });
+  const isDark =
+    iconColor === 'dark' ||
+    (iconColor === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
   return (
     <IntlProvider key={locale} locale={language} messages={model.messages}>
       <ConfigProvider
         locale={localeProvider[model.locale as keyof typeof localeProvider]}
+        theme={isDark ? { algorithm: theme.darkAlgorithm } : undefined}
         getPopupContainer={e => {
           if (!e || !e.parentNode) {
             return document.body;

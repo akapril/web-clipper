@@ -1,7 +1,7 @@
 import React, { useMemo, useState, forwardRef, useCallback } from 'react';
 import { Select } from 'antd';
 import { Repository } from 'common/backend';
-import { SelectProps } from 'antd/lib/select';
+import { SelectProps } from 'antd';
 import { debounce } from 'lodash';
 
 interface RepositoryInGroup {
