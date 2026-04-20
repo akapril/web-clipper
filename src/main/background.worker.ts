@@ -82,12 +82,31 @@ function main() {
         }
       }
 
-      // 方案2：自动刷新页面（最可靠，manifest 声明的 content_scripts 会在页面加载时自动注入）
+      // 方案2：刷新页面，等待加载完成后自动弹出剪藏面板
       if (!injected) {
+        const tabId = tab.id;
         try {
-          await chrome.tabs.reload(tab.id);
-          // 等待页面刷新和 content script 初始化
-          await new Promise(r => setTimeout(r, 2000));
+          // 监听页面加载完成事件
+          const waitForLoad = new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              chrome.tabs.onUpdated.removeListener(listener);
+              reject(new Error('Page reload timeout'));
+            }, 15000);
+
+            const listener = (updatedTabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+              if (updatedTabId === tabId && changeInfo.status === 'complete') {
+                chrome.tabs.onUpdated.removeListener(listener);
+                clearTimeout(timeout);
+                resolve();
+              }
+            };
+            chrome.tabs.onUpdated.addListener(listener);
+          });
+
+          chrome.tabs.reload(tabId);
+          await waitForLoad;
+          // 页面加载完成后再等 content script 初始化
+          await new Promise(r => setTimeout(r, 800));
           await contentScriptService.checkStatus();
           contentScriptService.toggle();
           injected = true;
