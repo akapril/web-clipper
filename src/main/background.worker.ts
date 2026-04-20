@@ -49,6 +49,12 @@ function main() {
   const contentScriptChannel = contentScriptIPCClient.getChannel('contentScript');
   Container.set(IContentScriptService, new ContentScriptChannelClient(contentScriptChannel));
   const contentScriptService = Container.get(IContentScriptService);
+  /**
+   * 检测是否为 Firefox（Firefox manifest 中脚本路径带 chrome/ 前缀）
+   */
+  const isFirefox = typeof navigator !== 'undefined' && navigator.userAgent.includes('Firefox');
+  const contentScriptFile = isFirefox ? 'chrome/content_script.js' : 'content_script.js';
+
   chrome.action.onClicked.addListener(async (tab) => {
     if (!tab || !tab.id) {
       return;
@@ -59,16 +65,32 @@ function main() {
     } catch (_e) {
       // content script 未注入（页面在扩展安装前已打开），尝试自动注入
       try {
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ['content_script.js'],
-        });
+        // 优先使用 chrome.scripting API（MV3）
+        if (chrome.scripting?.executeScript) {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: [contentScriptFile],
+          });
+        } else if ((chrome.tabs as any).executeScript) {
+          // 兼容旧版 Firefox MV2 API
+          await new Promise<void>((resolve, reject) => {
+            (chrome.tabs as any).executeScript(tab.id, { file: contentScriptFile }, () => {
+              if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+              } else {
+                resolve();
+              }
+            });
+          });
+        } else {
+          throw new Error('No scripting API available');
+        }
         // 注入后等待 content script 初始化
         await new Promise(r => setTimeout(r, 500));
         await contentScriptService.checkStatus();
         contentScriptService.toggle();
       } catch (retryError) {
-        // 注入也失败（如 chrome:// 等特殊页面），显示提示
+        // 注入也失败（如 about:、resource:// 等特殊页面），显示提示
         chrome.tabs.create({
           url: `${chrome.runtime.getURL(getResourcePath('error.html'))}?message=${(retryError as Error).message}`,
         });
