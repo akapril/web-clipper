@@ -55,15 +55,39 @@ function main() {
   const isFirefox = typeof navigator !== 'undefined' && navigator.userAgent.includes('Firefox');
   const contentScriptFile = isFirefox ? 'chrome/content_script.js' : 'content_script.js';
 
+  /**
+   * 检测 URL 是否为 PDF 页面
+   */
+  function isPdfUrl(url?: string): boolean {
+    if (!url) return false;
+    return url.endsWith('.pdf') || /\/pdf\//.test(url);
+  }
+
+  /**
+   * Firefox PDF 页面无法注入 content script（浏览器限制）
+   * 重定向到在线 pdf.js viewer（普通网页，content script 正常注入）
+   */
+  function redirectFirefoxPdf(tabId: number, pdfUrl: string): void {
+    const viewerUrl = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(pdfUrl)}`;
+    chrome.tabs.update(tabId, { url: viewerUrl });
+  }
+
   chrome.action.onClicked.addListener(async (tab) => {
     if (!tab || !tab.id) {
       return;
     }
+
+    // Firefox PDF 特殊处理：重定向到在线 viewer 后提示用户重新点击
+    if (isFirefox && isPdfUrl(tab.url)) {
+      redirectFirefoxPdf(tab.id, tab.url!);
+      return;
+    }
+
     try {
       await contentScriptService.checkStatus();
       contentScriptService.toggle();
-    } catch (_e) {
-      // content script 未注入，按优先级尝试三种方案
+    } catch (_e: any) {
+      console.warn('[Web Clipper] checkStatus failed:', _e?.message, 'URL:', tab.url);
 
       // 方案1：chrome.scripting API（MV3）
       let injected = false;
@@ -78,21 +102,19 @@ function main() {
           contentScriptService.toggle();
           injected = true;
         } catch (_e2) {
-          // scripting API 失败，继续尝试下一个方案
+          // scripting API 失败
         }
       }
 
-      // 方案2：刷新页面，等待加载完成后自动弹出剪藏面板
+      // 方案2：刷新页面，等加载完成后弹出
       if (!injected) {
         const tabId = tab.id;
         try {
-          // 监听页面加载完成事件
           const waitForLoad = new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => {
               chrome.tabs.onUpdated.removeListener(listener);
               reject(new Error('Page reload timeout'));
             }, 15000);
-
             const listener = (updatedTabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
               if (updatedTabId === tabId && changeInfo.status === 'complete') {
                 chrome.tabs.onUpdated.removeListener(listener);
@@ -102,10 +124,8 @@ function main() {
             };
             chrome.tabs.onUpdated.addListener(listener);
           });
-
           chrome.tabs.reload(tabId);
           await waitForLoad;
-          // 页面加载完成后再等 content script 初始化
           await new Promise(r => setTimeout(r, 800));
           await contentScriptService.checkStatus();
           contentScriptService.toggle();
@@ -115,7 +135,7 @@ function main() {
         }
       }
 
-      // 方案3：都失败了，显示提示（如 about:、chrome:// 等特殊页面）
+      // 方案3：都失败了
       if (!injected) {
         chrome.tabs.create({
           url: `${chrome.runtime.getURL(getResourcePath('error.html'))}`,

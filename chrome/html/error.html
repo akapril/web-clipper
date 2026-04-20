@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plugin Installation Notice</title>
+  <title>Web Clipper</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -23,40 +23,66 @@
       border-radius: 8px;
       background-color: #fff;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      max-width: 400px;
+      max-width: 450px;
       width: 100%;
     }
 
     h1 {
-      font-size: 24px;
+      font-size: 20px;
       color: #333;
     }
 
     p {
-      font-size: 16px;
+      font-size: 14px;
       color: #666;
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
-    a {
-      color: #007bff;
-      text-decoration: none;
+    .error-detail {
+      margin-top: 12px;
+      padding: 8px;
+      background: #f8f8f8;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #999;
+      word-break: break-all;
     }
 
-    a:hover {
-      text-decoration: underline;
+    .tips {
+      margin-top: 16px;
+      text-align: left;
+      font-size: 13px;
+      color: #555;
+    }
+
+    .tips li {
+      margin-bottom: 6px;
     }
   </style>
 </head>
 
 <body>
   <div class="container">
-    <h1>Plugin Installation Notice</h1>
-    <p>
-      After installing the plugin, if you want to use it on pages that were already open before installation, please
-      refresh the page.
-    </p>
+    <h1>Web Clipper 无法在此页面使用</h1>
+    <p>可能的原因：</p>
+    <ul class="tips">
+      <li>该页面是浏览器内部页面（如 about:、chrome://）</li>
+      <li>该页面是 PDF 文件（Firefox 的 PDF 阅读器限制扩展注入）</li>
+      <li>页面尚未完全加载，请稍后再试</li>
+      <li>请尝试刷新页面后再使用</li>
+    </ul>
+    <div class="error-detail" id="errorDetail" style="display:none"></div>
   </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const msg = params.get('message');
+    if (msg) {
+      const el = document.getElementById('errorDetail');
+      el.textContent = 'Error: ' + msg;
+      el.style.display = 'block';
+    }
+  </script>
 </body>
 
 </html>
