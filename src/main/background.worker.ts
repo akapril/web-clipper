@@ -49,20 +49,31 @@ function main() {
   const contentScriptChannel = contentScriptIPCClient.getChannel('contentScript');
   Container.set(IContentScriptService, new ContentScriptChannelClient(contentScriptChannel));
   const contentScriptService = Container.get(IContentScriptService);
-  chrome.action.onClicked.addListener((tab) => {
+  chrome.action.onClicked.addListener(async (tab) => {
     if (!tab || !tab.id) {
       return;
     }
-    contentScriptService
-      .checkStatus()
-      .then(() => {
-        contentScriptService.toggle();
-      })
-      .catch((e) => {
-        chrome.tabs.create({
-          url: `${chrome.runtime.getURL(getResourcePath('error.html'))}?message=${e.message}`,
+    try {
+      await contentScriptService.checkStatus();
+      contentScriptService.toggle();
+    } catch (_e) {
+      // content script 未注入（页面在扩展安装前已打开），尝试自动注入
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content_script.js'],
         });
-      });
+        // 注入后等待 content script 初始化
+        await new Promise(r => setTimeout(r, 500));
+        await contentScriptService.checkStatus();
+        contentScriptService.toggle();
+      } catch (retryError) {
+        // 注入也失败（如 chrome:// 等特殊页面），显示提示
+        chrome.tabs.create({
+          url: `${chrome.runtime.getURL(getResourcePath('error.html'))}?message=${(retryError as Error).message}`,
+        });
+      }
+    }
   });
   backgroundIPCServer.registerChannel(
     'permissions',
