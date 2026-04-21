@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useCallback } from 'react';
 import styles from './index.less';
-import { CaretDownOutlined, SettingOutlined, EditOutlined } from '@ant-design/icons';
+import { CaretDownOutlined, SettingOutlined, EditOutlined, CloseOutlined } from '@ant-design/icons';
 import { Button, Badge, Dropdown, Menu, theme } from 'antd';
 import { connect, routerRedux } from 'dva';
 import { GlobalStore } from '@/common/types';
@@ -166,6 +166,12 @@ const Page = React.memo<PageProps>(
                 )}</Observer>
               }
               onClick={() => push(pathname.startsWith('/preference') ? '/' : '/preference/account')}
+            />
+            <Button
+              type="text"
+              size="small"
+              icon={<CloseOutlined style={{ fontSize: 13, color: token.colorTextSecondary }} />}
+              onClick={Container.get(IContentScriptService).hide}
             />
           </div>
         </div>
