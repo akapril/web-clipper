@@ -20,9 +20,7 @@ type PageProps = {
 const ClipperHeader: React.FC<PageProps> = props => {
   const { pathname, service, currentRepository } = props;
   const [form] = Form.useForm();
-  const ref = useRef<ClipperHeaderForm>({ title: '' });
-  /** 标志位：setFieldsValue 期间屏蔽 onValuesChange 回写 Redux */
-  const isSyncing = useRef(false);
+  const initializedRef = useRef(false);
 
   const { loading, clipperHeaderForm } = useSelector((g: GlobalStore) => {
     return {
@@ -32,33 +30,28 @@ const ClipperHeader: React.FC<PageProps> = props => {
   }, isEqual);
   const dispatch = useDispatch();
 
-  // Redux → Form 同步
+  // 仅首次和外部变化（如 initTabInfo）时同步 Redux → Form
   useEffect(() => {
-    if (isEqual(clipperHeaderForm, ref.current)) {
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      form.setFieldsValue(clipperHeaderForm);
       return;
     }
-    isSyncing.current = true;
-    form.setFieldsValue(clipperHeaderForm);
-    ref.current = clipperHeaderForm;
-    isSyncing.current = false;
-  }, [clipperHeaderForm, form]);
-
-  // Form → Redux 同步
-  const handleValuesChange = useCallback((_: any, allValues: ClipperHeaderForm) => {
-    // setFieldsValue 触发的变化不回写 Redux，防止循环
-    if (isSyncing.current) {
-      return;
+    // 外部设置标题（如页面加载时 initTabInfo）
+    const currentTitle = form.getFieldValue('title');
+    if (clipperHeaderForm.title && clipperHeaderForm.title !== currentTitle) {
+      form.setFieldsValue({ title: clipperHeaderForm.title });
     }
-    if (isEqual(ref.current, allValues)) {
-      return;
-    }
-    ref.current = allValues;
-    dispatch(updateClipperHeader(allValues));
-  }, [dispatch]);
+  }, [clipperHeaderForm.title, form]);
 
   const handleSubmit = useCallback(() => {
-    form.validateFields().then(() => {
-      dispatch(asyncCreateDocument.started({ pathname }));
+    form.validateFields().then((values) => {
+      // 保存时把 form 值同步到 Redux
+      dispatch(updateClipperHeader(values));
+      // 等 Redux 更新后再触发保存
+      setTimeout(() => {
+        dispatch(asyncCreateDocument.started({ pathname }));
+      }, 0);
     }).catch(() => {});
   }, [form, dispatch, pathname]);
 
@@ -72,11 +65,7 @@ const ClipperHeader: React.FC<PageProps> = props => {
       title={<FormattedMessage id="tool.title" defaultMessage="Title" />}
       className={classNames(styles.header, styles.section)}
     >
-      <Form
-        form={form}
-        onValuesChange={handleValuesChange}
-        initialValues={clipperHeaderForm}
-      >
+      <Form form={form} initialValues={clipperHeaderForm}>
         <Form.Item
           name="title"
           rules={[{ required: true, message: <FormattedMessage id="tool.title.required" /> }]}
