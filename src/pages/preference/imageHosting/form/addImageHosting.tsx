@@ -70,7 +70,7 @@ const AddImageHostingModal: React.FC<PageOwnProps> = props => {
   }
 
   return (
-    <Modal title={title} open={visible} onOk={handleOk} onCancel={props.onCancel} destroyOnClose>
+    <Modal title={title} open={visible} onOk={handleOk} onCancel={props.onCancel} destroyOnClose width={560}>
       <Form form={form} {...formItemLayout} initialValues={initValues}>
         <Form.Item
           name="type"

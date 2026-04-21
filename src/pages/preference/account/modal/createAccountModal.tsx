@@ -101,8 +101,10 @@ const Page: React.FC<PageOwnProps> = ({
       okButtonProps={{ loading: verifying, disabled: verifying }}
       onOk={handleOk}
       title={<ModalTitle />}
+      destroyOnClose
+      width={560}
     >
-      <Form form={form} labelCol={{ span: 7, offset: 0 }} wrapperCol={{ span: 17 }} initialValues={{ type }}>
+      <Form form={form} layout="vertical" initialValues={{ type }}>
         <Form.Item
           name="type"
           label={<FormattedMessage id="preference.accountList.type" defaultMessage="Type" />}
