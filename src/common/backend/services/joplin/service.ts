@@ -63,13 +63,11 @@ export default class JoplinDocumentService implements DocumentService {
         const client = await this._getJoplinClient(token);
         const repositories = await client.getRepositories();
         if (Array.isArray(repositories)) {
-          console.log(`Check token ${i} success.`);
           return client;
         }
         return client;
       } catch (_error) {
         //
-        console.log(`Check token ${i} error.`);
       }
     }
 

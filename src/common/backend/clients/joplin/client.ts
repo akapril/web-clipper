@@ -44,7 +44,6 @@ export class JoplinClient extends AbstractJoplinClient {
         await Promise.all(
           tags.map(async tag => {
             const notes = await this.request.get<unknown[]>(`tags/${tag.id}/notes`);
-            console.log('notes', notes);
             if (notes.length === 0) {
               return null;
             }

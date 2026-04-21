@@ -222,13 +222,13 @@ const model = new DvaModelBuilder(defaultState, 'clipper')
       throw new Error('Must select repository.');
     }
     if (!extension) {
-      // DEBT
+      // DEBT: 无扩展时仅允许 /editor 路径继续执行，其他路径直接返回，原因待明确
       if (pathname !== '/editor') {
         return;
       }
     }
     for (const iterator of automaticExtensions) {
-      // DEBT
+      // DEBT: /editor 路径下跳过 web-clipper/link 自动扩展，避免重复触发，原因待明确
       if (iterator.id === 'web-clipper/link.' && pathname === '/editor') {
         continue;
       }

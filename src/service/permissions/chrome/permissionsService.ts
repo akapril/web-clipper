@@ -28,7 +28,6 @@ class PermissionsService implements IPermissionsService {
         r(true);
         return;
       }
-      console.log('chrome.permissions.request ', chrome);
       chrome.permissions.request(p, r);
     });
   }

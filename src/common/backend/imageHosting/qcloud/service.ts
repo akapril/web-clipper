@@ -28,7 +28,6 @@ export default class QcloudCosImageHostingService implements ImageHostingService
   };
 
   uploadImage = async ({ data }: UploadImageRequest) => {
-    console.log('uploading...');
     const blob = Base64ImageToBlob(data);
     return this.uploadAsBlob(blob);
   };
