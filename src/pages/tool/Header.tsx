@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import { Form, Input, Button } from 'antd';
 import Section from '@/components/section';
 import { FormattedMessage } from 'react-intl';
@@ -21,6 +21,9 @@ const ClipperHeader: React.FC<PageProps> = props => {
   const { pathname, service, currentRepository } = props;
   const [form] = Form.useForm();
   const ref = useRef<ClipperHeaderForm>({ title: '' });
+  /** 标志位：setFieldsValue 期间屏蔽 onValuesChange 回写 Redux */
+  const isSyncing = useRef(false);
+
   const { loading, clipperHeaderForm } = useSelector((g: GlobalStore) => {
     return {
       loading: g.loading.effects[asyncCreateDocument.started.type],
@@ -34,28 +37,33 @@ const ClipperHeader: React.FC<PageProps> = props => {
     if (isEqual(clipperHeaderForm, ref.current)) {
       return;
     }
+    isSyncing.current = true;
     form.setFieldsValue(clipperHeaderForm);
     ref.current = clipperHeaderForm;
+    isSyncing.current = false;
   }, [clipperHeaderForm, form]);
 
   // Form → Redux 同步
-  const handleValuesChange = (_: any, allValues: ClipperHeaderForm) => {
+  const handleValuesChange = useCallback((_: any, allValues: ClipperHeaderForm) => {
+    // setFieldsValue 触发的变化不回写 Redux，防止循环
+    if (isSyncing.current) {
+      return;
+    }
     if (isEqual(ref.current, allValues)) {
       return;
     }
-    dispatch(updateClipperHeader(allValues));
     ref.current = allValues;
-  };
+    dispatch(updateClipperHeader(allValues));
+  }, [dispatch]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     form.validateFields().then(() => {
       dispatch(asyncCreateDocument.started({ pathname }));
     }).catch(() => {});
-  };
+  }, [form, dispatch, pathname]);
 
   const headerForm = useMemo(() => {
     const HeaderForm = service?.headerForm;
-    // antd 5: headerForm 子组件在 <Form> 内部，自动继承 form context
     return HeaderForm ? <HeaderForm currentRepository={currentRepository} /> : null;
   }, [currentRepository, service]);
 

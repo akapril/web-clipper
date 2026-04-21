@@ -105,11 +105,11 @@ const Preference: React.FC<PageProps> = ({
 
   return (
     <CenterContainer>
-      <div className={styles.mainContent}>
-        <div onClick={goHome} className={styles.closeIcon}>
+      <div className={styles.mainContent} style={{ background: token.colorBgContainer, borderColor: token.colorBorder }}>
+        <div onClick={goHome} className={styles.closeIcon} style={{ color: token.colorTextSecondary }}>
           <CloseOutlined />
         </div>
-        <div style={{ background: token.colorBgContainer, height: '100%' }}>
+        <div style={{ height: '100%' }}>
           <Tabs activeKey={pathname} tabPosition="left" style={{ height: '100%' }} onChange={push}>
             {tabs.map(tab => {
               const path = `/preference/${tab.path}`;
