@@ -28,8 +28,6 @@ import { useObserver } from 'mobx-react';
 
 const { Route } = router;
 
-const TabPane = Tabs.TabPane;
-
 const mapStateToProps = ({ account: { accounts } }: GlobalStore) => {
   return {
     accounts,
@@ -110,25 +108,37 @@ const Preference: React.FC<PageProps> = ({
           <CloseOutlined />
         </div>
         <div style={{ height: '100%' }}>
-          <Tabs activeKey={pathname} tabPosition="left" style={{ height: '100%' }} onChange={push}>
-            {tabs.map(tab => {
+          <Tabs
+            activeKey={pathname}
+            tabPosition="left"
+            style={{ height: '100%' }}
+            onTabClick={(key) => {
+              if (key !== pathname) {
+                push(key);
+              }
+            }}
+            items={tabs.map(tab => {
               const path = `/preference/${tab.path}`;
-              let tabTitle = (
+              let label = (
                 <div style={{ width: 100 }}>
                   {tab.icon}
                   {tab.title}
                 </div>
               );
               if (!isLatestVersion && tab.path === 'base') {
-                tabTitle = <Badge dot>{tabTitle}</Badge>;
+                label = <Badge dot>{label}</Badge>;
               }
-              return (
-                <TabPane tab={tabTitle} key={path} className={styles.tabPane}>
-                  <Route exact path={path} component={tab.component} />
-                </TabPane>
-              );
+              return {
+                key: path,
+                label,
+                children: (
+                  <div className={styles.tabPane}>
+                    <Route exact path={path} component={tab.component} />
+                  </div>
+                ),
+              };
             })}
-          </Tabs>
+          />
         </div>
       </div>
     </CenterContainer>
