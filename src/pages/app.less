@@ -4,3 +4,26 @@ body {
     Hiragino Sans GB, Microsoft YaHei, Helvetica Neue, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/* 所有 antd Modal 弹窗层级必须在最高 */
+:global {
+  .ant-modal-wrap,
+  .ant-modal-mask {
+    z-index: 2147483647 !important;
+  }
+  .ant-message {
+    z-index: 2147483647 !important;
+  }
+  .ant-notification {
+    z-index: 2147483647 !important;
+  }
+  .ant-select-dropdown {
+    z-index: 2147483647 !important;
+  }
+  .ant-dropdown {
+    z-index: 2147483647 !important;
+  }
+  .ant-tooltip {
+    z-index: 2147483647 !important;
+  }
+}
