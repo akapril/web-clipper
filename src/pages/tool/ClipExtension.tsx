@@ -27,7 +27,7 @@ const ClipExtensions: React.FC<PageProps> = ({ extensions, pathname, onClick, ha
     >
       {extensions.map(plugin => {
         const useThisPlugin = plugin.router === pathname;
-        const buttonStyle = useThisPlugin ? { color: '#40a9ff' } : {};
+        const buttonStyle = useThisPlugin ? { color: 'var(--ant-color-primary, #1677ff)' } : {};
         return (
           <Button
             title={plugin.manifest.description}
@@ -47,7 +47,7 @@ const ClipExtensions: React.FC<PageProps> = ({ extensions, pathname, onClick, ha
           block
           key={'/editor'}
           className={styles.menuButton}
-          style={pathname === '/editor' ? { color: '#40a9ff' } : {}}
+          style={pathname === '/editor' ? { color: 'var(--ant-color-primary, #1677ff)' } : {}}
           onClick={() => handleClick('/editor')}
         >
           <IconFont type={'select'} />
