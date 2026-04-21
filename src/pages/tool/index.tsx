@@ -51,7 +51,6 @@ const mapStateToProps = ({
     repositories,
     locale,
     servicesMeta,
-    clipperData,
   };
 };
 type PageStateProps = ReturnType<typeof mapStateToProps>;
@@ -75,7 +74,6 @@ const Page = React.memo<PageProps>(
       accounts,
       servicesMeta,
       hasEditor,
-      clipperData,
     } = props;
 
     const extensions = useObserver(() => {
@@ -94,17 +92,13 @@ const Page = React.memo<PageProps>(
     const currentService = currentAccount ? servicesMeta[currentAccount.type] : null;
 
     useEffect(() => {
-      if (pathname === '/') {
-        if (accounts.length === 0) {
-          dispatch(routerRedux.push('/preference/account'));
-        }
+      if (pathname === '/' && accounts.length === 0) {
+        dispatch(routerRedux.push('/preference/account'));
       }
     }, [accounts.length, dispatch, pathname]);
 
     const onRepositorySelect = useCallback(
-      (repositoryId: string) => {
-        dispatch(selectRepository({ repositoryId }));
-      },
+      (repositoryId: string) => dispatch(selectRepository({ repositoryId })),
       [dispatch]
     );
     let repositoryId: string | undefined;
@@ -112,8 +106,7 @@ const Page = React.memo<PageProps>(
       repositoryId = currentRepository.id;
     }
     useEffect(() => {
-      if (currentAccount && currentAccount.defaultRepositoryId) {
-        if (repositoryId) return;
+      if (currentAccount?.defaultRepositoryId && !repositoryId) {
         onRepositorySelect(currentAccount.defaultRepositoryId);
       }
     }, [repositoryId, currentAccount, onRepositorySelect]);
@@ -135,32 +128,23 @@ const Page = React.memo<PageProps>(
     });
 
     const [toolExts, clipExts] = useFilterExtensions(enableExtensions);
+    const configService = Container.get(IConfigService);
 
-    // 内容预览
-    const previewContent = clipperData[pathname] || '';
-
-    // 账户下拉菜单
+    // 账户下拉
     const overlay = useMemo(() => (
       <Menu onClick={e => dispatch(asyncChangeAccount.started({ id: e.key as string }))}>
         {accounts.map(o => (
           <Menu.Item key={o.id} title={o.name}>
-            <UserItem
-              avatar={o.avatar}
-              name={o.name}
-              description={o.description}
-              icon={servicesMeta[o.type].icon}
-            />
+            <UserItem avatar={o.avatar} name={o.name} description={o.description} icon={servicesMeta[o.type].icon} />
           </Menu.Item>
         ))}
       </Menu>
     ), [dispatch, accounts, servicesMeta]);
 
-    const configService = Container.get(IConfigService);
-
     return (
       <ToolContainer onClickCloseButton={Container.get(IContentScriptService).hide}>
         {/* 顶栏 */}
-        <div className={styles.topBar} style={{ borderColor: token.colorBorderSecondary }}>
+        <div className={styles.topBar} style={{ borderColor: token.colorBorderSecondary, background: token.colorBgContainer }}>
           <span className={styles.title} style={{ color: token.colorText }}>Web Clipper</span>
           <div className={styles.actions}>
             <Dropdown overlay={overlay} placement="bottomRight">
@@ -168,138 +152,93 @@ const Page = React.memo<PageProps>(
                 {currentAccount && (
                   <IconAvatar size="small" avatar={currentAccount.avatar} icon={servicesMeta[currentAccount.type].icon} />
                 )}
-                <CaretDownOutlined style={{ fontSize: 8, color: token.colorTextTertiary, marginLeft: 4 }} />
+                <CaretDownOutlined style={{ fontSize: 8, color: token.colorTextTertiary, marginLeft: 3 }} />
               </div>
             </Dropdown>
             <Button
               type="text"
               size="small"
               icon={
-                <Observer>
-                  {() => (
-                    <Badge dot={!configService.isLatestVersion} offset={[-2, 2]}>
-                      <SettingOutlined style={{ fontSize: 15 }} />
-                    </Badge>
-                  )}
-                </Observer>
+                <Observer>{() => (
+                  <Badge dot={!configService.isLatestVersion} offset={[-2, 2]}>
+                    <SettingOutlined style={{ fontSize: 14, color: token.colorTextSecondary }} />
+                  </Badge>
+                )}</Observer>
               }
               onClick={() => push(pathname.startsWith('/preference') ? '/' : '/preference/account')}
             />
           </div>
         </div>
 
-        {/* 主体分栏 */}
-        <div className={styles.wrapper}>
-          {/* 左侧：剪藏类型 + 工具 */}
-          <div className={styles.leftPanel} style={{ borderColor: token.colorBorderSecondary }}>
-            <div className={styles.sectionLabel} style={{ color: token.colorTextQuaternary }}>
-              <FormattedMessage id="tool.clipExtensions" defaultMessage="Clip" />
-            </div>
-            {hasEditor && (
-              <button
-                className={`${styles.clipButton} ${pathname === '/editor' ? styles.clipButtonActive : ''}`}
-                onClick={() => push('/editor')}
-              >
-                <EditOutlined style={{ fontSize: 13 }} />
-                <span>Selection</span>
-              </button>
-            )}
-            {clipExts.map(o => (
+        {/* 标题 + 表单 */}
+        <div className={styles.body}>
+          <Header pathname={pathname} service={currentService} currentRepository={currentRepository} />
+        </div>
+
+        {/* 剪藏类型标签 */}
+        <div className={styles.clipTabs} style={{ borderColor: token.colorBorderSecondary }}>
+          {hasEditor && (
+            <button
+              className={`${styles.clipTab} ${pathname === '/editor' ? styles.clipTabActive : ''}`}
+              onClick={() => push('/editor')}
+            >
+              <EditOutlined style={{ fontSize: 12 }} />
+              <span>选取</span>
+            </button>
+          )}
+          {clipExts.map(o => (
+            <button
+              key={o.id}
+              className={`${styles.clipTab} ${pathname === o.router ? styles.clipTabActive : ''}`}
+              onClick={() => push(o.router)}
+              title={o.manifest.description}
+            >
+              <IconFont type={o.manifest.icon} style={{ fontSize: 12 }} />
+              <span>{o.manifest.name}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* 工具扩展图标 */}
+        {toolExts.length > 0 && (
+          <div className={styles.toolRow} style={{ borderColor: token.colorBorderSecondary }}>
+            {toolExts.map(o => (
               <button
                 key={o.id}
-                className={`${styles.clipButton} ${pathname === o.router ? styles.clipButtonActive : ''}`}
-                onClick={() => push(o.router)}
-                title={o.manifest.description}
+                className={styles.toolIcon}
+                title={o.manifest.description || o.manifest.name}
+                style={{ color: token.colorTextSecondary }}
+                onClick={() => dispatch(asyncRunExtension.started({ pathname, extension: o }))}
               >
-                <IconFont type={o.manifest.icon} style={{ fontSize: 13 }} />
-                <span>{o.manifest.name}</span>
+                <IconFont type={o.manifest.icon} />
               </button>
             ))}
-
-            {toolExts.length > 0 && (
-              <>
-                <div className={styles.sectionLabel} style={{ color: token.colorTextQuaternary, marginTop: 4 }}>
-                  <FormattedMessage id="tool.toolExtensions" defaultMessage="Tools" />
-                </div>
-                <div className={styles.toolGrid}>
-                  {toolExts.map(o => (
-                    <button
-                      key={o.id}
-                      className={styles.toolIcon}
-                      title={o.manifest.description || o.manifest.name}
-                      onClick={() =>
-                        dispatch(asyncRunExtension.started({ pathname, extension: o }))
-                      }
-                    >
-                      <IconFont type={o.manifest.icon} />
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
           </div>
+        )}
 
-          {/* 右侧：表单 + 预览 + 操作 */}
-          <div className={styles.rightPanel}>
-            <Header
-              pathname={pathname}
-              service={currentService}
-              currentRepository={currentRepository}
-            />
-
-            {/* 内容预览 */}
-            {previewContent && (
-              <div className={styles.previewArea} style={{
-                borderColor: token.colorBorderSecondary,
-                color: token.colorTextSecondary,
-                background: token.colorBgLayout,
-              }}>
-                {typeof previewContent === 'string'
-                  ? previewContent.slice(0, 500) + (previewContent.length > 500 ? '...' : '')
-                  : ''}
-              </div>
-            )}
-
-            {/* 目标选择 */}
-            <div className={styles.bottomBar}>
-              <RepositorySelect
-                disabled={loadingAccount}
-                loading={loadingAccount}
-                repositories={repositories}
-                onSelect={onRepositorySelect}
-                style={{ width: '100%' }}
-                dropdownMatchSelectWidth={true}
-                value={repositoryId}
-              />
-            </div>
-          </div>
+        {/* 底部：目标选择 + 保存 */}
+        <div className={styles.footer} style={{ borderColor: token.colorBorderSecondary }}>
+          <RepositorySelect
+            disabled={loadingAccount}
+            loading={loadingAccount}
+            repositories={repositories}
+            onSelect={onRepositorySelect}
+            style={{ width: '100%' }}
+            dropdownMatchSelectWidth={true}
+            value={repositoryId}
+          />
         </div>
       </ToolContainer>
     );
   },
   (prevProps: PageProps, nextProps: PageProps) => {
     const selector = ({
-      repositories,
-      currentAccount,
-      currentRepository,
-      history,
-      loadingAccount,
-      locale,
-      servicesMeta,
-      accounts,
-      hasEditor,
-      clipperData,
+      repositories, currentAccount, currentRepository, history,
+      loadingAccount, locale, servicesMeta, accounts, hasEditor,
     }: PageProps) => ({
-      hasEditor,
-      loadingAccount,
-      currentRepository,
-      repositories,
-      currentAccount,
-      pathname: history.location.pathname,
-      locale,
-      servicesMeta,
-      accounts,
-      clipperData,
+      hasEditor, loadingAccount, currentRepository, repositories,
+      currentAccount, pathname: history.location.pathname,
+      locale, servicesMeta, accounts,
     });
     return isEqual(selector(prevProps), selector(nextProps));
   }
