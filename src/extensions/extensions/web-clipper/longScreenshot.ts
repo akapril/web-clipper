@@ -114,17 +114,27 @@ export default new TextExtension<PageDimensions>(
       // 导出画布为 data URL
       const dataUrl = canvas.toDataURL('image/png');
 
-      // 有图床时上传，无图床时用 data URL 内联
+      // 有图床时上传
       if (imageService) {
         try {
           const url = await imageService.uploadImage({ data: dataUrl });
           return `![](${url})\n\n`;
         } catch (_e) {
-          // 上传失败时回退到 data URL
-          return `![long-screenshot](${dataUrl})\n\n`;
+          // 上传失败时回退
         }
       }
-      return `![long-screenshot](${dataUrl})\n\n`;
+      // 无图床或上传失败：下载图片文件
+      const { createAndDownloadFile } = context;
+      const timestamp = Date.now();
+      const fileName = `long-screenshot-${timestamp}.png`;
+      const binaryString = atob(dataUrl.split(',')[1]);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'image/png' });
+      createAndDownloadFile(fileName, blob);
+      return `![${fileName}](${fileName})\n\n`;
     },
 
     destroy: async (context) => {

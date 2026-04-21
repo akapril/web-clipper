@@ -55,17 +55,28 @@ export default new TextExtension<SelectAreaPosition>(
       ctx!.drawImage(img, sx, sy, swidth, sheight, 0, 0, swidth, sheight);
       const dataUrl = canvas.toDataURL();
 
-      // 有图床时上传，无图床时用 data URL 内联
+      // 有图床时上传
       if (imageService) {
         try {
           const url = await imageService.uploadImage({ data: dataUrl });
           return `![](${url})\n\n`;
         } catch (_e) {
-          // 上传失败时回退到 data URL
-          return `![screenshot](${dataUrl})\n\n`;
+          // 上传失败时回退
         }
       }
-      return `![screenshot](${dataUrl})\n\n`;
+      // 无图床或上传失败：将图片转为 Blob URL 下载，markdown 中标注文件名
+      const { createAndDownloadFile } = context;
+      const timestamp = Date.now();
+      const fileName = `screenshot-${timestamp}.png`;
+      // data URL 转 Blob 下载
+      const binaryString = atob(dataUrl.split(',')[1]);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'image/png' });
+      createAndDownloadFile(fileName, blob);
+      return `![${fileName}](${fileName})\n\n`;
     },
     destroy: async context => {
       const { toggleClipper, toggleLoading } = context;
