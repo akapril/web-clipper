@@ -2,19 +2,27 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>webpack App</title>
+    <title>Web Clipper</title>
     <style>
       .web-clipper-loading {
         position: fixed;
-        right: 10px;
-        top: 10px;
-        box-shadow: rgba(0, 0, 0, 0.2) 0px 0px 12px 0px;
-        background: white;
-        width: 324px;
-        height: 150px;
+        right: 12px;
+        top: 12px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+        border-radius: 10px;
+        width: 340px;
+        height: 120px;
         display: flex;
         align-items: center;
         justify-content: center;
+        z-index: 2147483647;
+      }
+
+      @media (prefers-color-scheme: light) {
+        .web-clipper-loading { background: #fff; }
+      }
+      @media (prefers-color-scheme: dark) {
+        .web-clipper-loading { background: #1f1f1f; }
       }
 
       .web-clipper-loading .line {
@@ -27,32 +35,14 @@
         height: 25px;
       }
 
-      .web-clipper-loading .line:nth-child(1) {
-        background: #27ae60;
-      }
-
-      .web-clipper-loading .line:nth-child(2) {
-        animation-delay: 180ms;
-        background: #f1c40f;
-      }
-
-      .web-clipper-loading .line:nth-child(3) {
-        animation-delay: 360ms;
-        background: #e67e22;
-      }
-
-      .web-clipper-loading .line:nth-child(4) {
-        animation-delay: 540ms;
-        background: #2980b9;
-      }
+      .web-clipper-loading .line:nth-child(1) { background: #27ae60; }
+      .web-clipper-loading .line:nth-child(2) { animation-delay: 180ms; background: #f1c40f; }
+      .web-clipper-loading .line:nth-child(3) { animation-delay: 360ms; background: #e67e22; }
+      .web-clipper-loading .line:nth-child(4) { animation-delay: 540ms; background: #2980b9; }
 
       @keyframes expand {
-        0% {
-          transform: scale(1);
-        }
-        25% {
-          transform: scale(2);
-        }
+        0% { transform: scale(1); }
+        25% { transform: scale(2); }
       }
     </style>
   </head>

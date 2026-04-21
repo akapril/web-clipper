@@ -1,33 +1,100 @@
-.menuButton {
-  text-align: left;
-  border: none;
-  box-shadow: none;
-  span {
-    font-size: 16px;
+/* 顶栏 */
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+  .title {
+    font-size: 13px;
+    font-weight: 600;
+    user-select: none;
+  }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 }
 
-.save-button {
-  span {
-    font-size: 16px;
-  }
+/* 内容区 */
+.body {
+  padding: 10px 12px;
 }
-.toolbar {
-  font-size: 18px;
-  display: flex;
-  justify-content: space-between;
-}
-.toolbarButton {
-  border: none;
-  columns: #e8e8e8;
-  font-size: 18px;
-  box-shadow: none;
-}
+
+/* 标题和表单 */
 .header {
-  :global(.ant-legacy-form-item) {
-    margin-bottom: 8px;
+  :global(.ant-form-item) {
+    margin-bottom: 6px;
   }
 }
+
+/* 剪藏类型标签式切换 */
+.clipTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+}
+.clipTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  white-space: nowrap;
+}
+.clipTab:hover {
+  background: rgba(128, 128, 128, 0.1);
+}
+.clipTabActive {
+  background: rgba(22, 119, 255, 0.08);
+  border-color: rgba(22, 119, 255, 0.2);
+  color: #1677ff;
+}
+
+/* 工具扩展图标行 */
+.toolRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px 12px;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
+}
+.toolIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s;
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+.toolIcon:hover {
+  background: rgba(128, 128, 128, 0.15);
+}
+
+/* 底部操作区 */
+.footer {
+  padding: 8px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
+}
+
 .section {
-  margin-bottom: 16px;
+  margin-bottom: 6px;
 }

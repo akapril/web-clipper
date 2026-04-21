@@ -51,7 +51,6 @@ export default class WebDAVDocumentService implements DocumentService {
         displayname: file.basename,
       }))
     );
-    console.log({ list });
 
     return list;
   };

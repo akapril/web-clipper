@@ -147,7 +147,7 @@ export default class YuqueDocumentService implements DocumentService {
       );
       return response;
     } catch (error) {
-      console.log(error);
+      console.warn(error);
       return [];
     }
   };

@@ -41,7 +41,7 @@ export const EditorContainer: React.FC = ({ children }) => {
   return (
     <div
       className={styles.editorContainer}
-      style={{ background: token.colorBgContainer, borderColor: token.colorBorder }}
+      style={{ background: token.colorBgContainer, borderColor: token.colorBorder, color: token.colorText }}
     >
       {children}
     </div>

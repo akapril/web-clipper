@@ -51,7 +51,7 @@ const Page: React.FC = () => {
       );
       actions.push(
         <Tooltip title={title}>
-          <StarOutlined style={iconStyle} onClick={() => handleSetDefault(e.id)} />
+          <span><StarOutlined style={iconStyle} onClick={() => handleSetDefault(e.id)} /></span>
         </Tooltip>
       );
     }
@@ -70,21 +70,26 @@ const Page: React.FC = () => {
             )
           }
         >
-          <IconFont
-            type="auto"
-            onClick={() => extensionService.toggleAutomaticExtension(e.id)}
-            style={automaticDisabled ? {} : { color: 'red' }}
-          />
+          <span>
+            <IconFont
+              type="auto"
+              onClick={() => extensionService.toggleAutomaticExtension(e.id)}
+              style={automaticDisabled ? {} : { color: 'red' }}
+            />
+          </span>
         </Tooltip>
       );
     }
-    return actions.concat(
-      <Switch
-        size="small"
-        checked={!disabledExtensions.some(o => o === e.id)}
-        onClick={() => extensionService.toggleDisableExtension(e.id)}
-      />
+    actions.push(
+      <span key="switch">
+        <Switch
+          size="small"
+          checked={!disabledExtensions.some(o => o === e.id)}
+          onClick={() => extensionService.toggleDisableExtension(e.id)}
+        />
+      </span>
     );
+    return actions;
   };
 
   return (
@@ -103,12 +108,13 @@ const Page: React.FC = () => {
                 className={styles.extensionCard}
                 manifest={contextMenus.manifest}
                 actions={[
-                  <Switch
-                    key="toggle"
-                    size="small"
-                    checked={!disabledExtensions.some(o => o === e.id)}
-                    onClick={() => extensionService.toggleDisableExtension(e.id)}
-                  />,
+                  <span key="toggle">
+                    <Switch
+                      size="small"
+                      checked={!disabledExtensions.some(o => o === e.id)}
+                      onClick={() => extensionService.toggleDisableExtension(e.id)}
+                    />
+                  </span>,
                 ]}
               ></ExtensionCard>
             </Col>
@@ -146,7 +152,7 @@ const Page: React.FC = () => {
             />
           }
         >
-          <QuestionCircleOutlined style={{ fontSize: 14, marginLeft: 5 }} />
+          <span><QuestionCircleOutlined style={{ fontSize: 14, marginLeft: 5 }} /></span>
         </Tooltip>
       </Typography.Title>
       <Row gutter={8}>

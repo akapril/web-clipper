@@ -1,7 +1,8 @@
 {
   "name": "web-clipper",
-  "version": "1.42.0",
+  "version": "2.0.0",
   "description": "Universal open source web clipper.",
+  "sideEffects": ["*.less", "*.css", "reflect-metadata"],
   "bin": {
     "web-clipper": "bin/index.js"
   },

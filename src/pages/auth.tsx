@@ -114,7 +114,7 @@ const Page: React.FC<PageProps> = props => {
         } catch (_e) {}
       }}
     >
-      <Form form={form} labelCol={{ span: 7, offset: 0 }} wrapperCol={{ span: 17 }} initialValues={{ type: query.type }}>
+      <Form form={form} layout="vertical" initialValues={{ type: query.type }}>
         <Form.Item
           name="type"
           label={<FormattedMessage id="preference.accountList.type" defaultMessage="Type" />}

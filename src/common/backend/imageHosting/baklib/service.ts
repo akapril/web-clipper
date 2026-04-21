@@ -60,7 +60,6 @@ export default class YuqueImageHostingService implements ImageHostingService {
     if (!this.context?.currentRepository.id) {
       throw new Error('请选择站点');
     }
-    console.log('this.context?.currentRepository.id', this.context?.currentRepository.id);
     let formData = new FormData();
     formData.append('base64', await BlobToBase64(blob));
     formData.append('tenant_id', this.context?.currentRepository.id);

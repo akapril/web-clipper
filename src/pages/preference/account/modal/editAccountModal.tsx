@@ -90,6 +90,9 @@ const Page: React.FC<PageOwnProps> = ({
       okType="primary"
       okButtonProps={{ loading: verifying }}
       onCancel={onCancel}
+      destroyOnClose
+      width={560}
+      styles={{ body: { maxHeight: '60vh', overflowY: 'auto' } }}
       onOk={() => {
         if (verified) {
           const values = form.getFieldsValue();
@@ -101,8 +104,7 @@ const Page: React.FC<PageOwnProps> = ({
     >
       <Form
         form={form}
-        labelCol={{ span: 7, offset: 0 }}
-        wrapperCol={{ span: 17 }}
+        layout="vertical"
         initialValues={{
           type: currentAccount.type,
           defaultRepositoryId: currentAccount.defaultRepositoryId,

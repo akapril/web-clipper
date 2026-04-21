@@ -249,7 +249,7 @@ const ObsidianForm: React.FC<ObsidianFormProps> = ({ info }) => {
               </div>
             )}
             {treeLoaded && treeData.length === 0 && (
-              <div style={{ color: '#999', fontSize: 12 }}>
+              <div style={{ opacity: 0.5, fontSize: 12 }}>
                 {localeService.format({
                   id: 'backend.services.obsidian.form.fetchFolders.empty',
                   defaultMessage: 'No subfolders found, using vault root',
