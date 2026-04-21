@@ -156,77 +156,75 @@ const SchemaField = createSchemaField({
   },
 });
 
-const ReachableContext = React.createContext<{
-  manifest: SerializedExtensionInfo['manifest'] | null;
-  // eslint-disable-next-line no-undefined
-}>({ manifest: null });
+/**
+ * 扩展配置表单组件 — createForm 只在首次渲染时创建
+ */
+const ExtensionConfigForm: React.FC<{ manifest: SerializedExtensionInfo['manifest'] }> = ({ manifest }) => {
+  const config = manifest.config;
+  const extensionId = manifest.extensionId as string;
+  const formRef = React.useRef<any>(null);
 
-const config = () => {
-  return {
-    width: 800,
-    content: (
-      <>
-        <ReachableContext.Consumer>
-          {({ manifest }) => {
-            const config = manifest!.config;
-            const extensionId: string = manifest!.extensionId as string;
-            const defaultValue =
-              Container.get(IExtensionService).getExtensionConfig(extensionId) ||
-              toJS(config?.default);
-            const normalForm = createForm({
-              validateFirst: true,
-              initialValues: defaultValue as any,
-              effects: () => {
-                onFormValuesChange(form => {
-                  if (form.mounted) {
-                    Container.get(IExtensionService).setExtensionConfig(extensionId, form.values);
-                  }
-                });
-              },
-            });
-            return (
-              <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                <div style={{ width: '600px' }}>
-                  <Form form={normalForm} layout="vertical">
-                    <SchemaField schema={config!.scheme} />
-                  </Form>
-                  <Button
-                    onClick={() => {
-                      normalForm.setValues(toJS(config?.default), 'overwrite');
-                    }}
-                  >
-                    {localeService.format({ id: 'preference.extensions.form.reset' })}
-                  </Button>
-                </div>
-              </div>
-            );
+  if (!formRef.current) {
+    const defaultValue =
+      Container.get(IExtensionService).getExtensionConfig(extensionId) ||
+      toJS(config?.default);
+    formRef.current = createForm({
+      validateFirst: true,
+      initialValues: defaultValue as any,
+      effects: () => {
+        onFormValuesChange(form => {
+          if (form.mounted) {
+            Container.get(IExtensionService).setExtensionConfig(extensionId, form.values);
+          }
+        });
+      },
+    });
+  }
+
+  return (
+    <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+      <div style={{ width: '600px' }}>
+        <Form form={formRef.current} layout="vertical">
+          <SchemaField schema={config!.scheme} />
+        </Form>
+        <Button
+          onClick={() => {
+            formRef.current.setValues(toJS(config?.default), 'overwrite');
           }}
-        </ReachableContext.Consumer>
-      </>
-    ),
-  };
+        >
+          {localeService.format({ id: 'preference.extensions.form.reset' })}
+        </Button>
+      </div>
+    </div>
+  );
 };
 
 const ExtensionCard: React.FC<ExtensionCardProps> = ({ manifest, actions, className }) => {
   const extra: React.ReactNode[] = [manifest.version];
-  const [modal, contextHolder] = Modal.useModal();
+  const [configVisible, setConfigVisible] = React.useState(false);
 
   if (manifest.config) {
     extra.push(
       <SettingOutlined
         style={{ marginLeft: 8 }}
         key="setting"
-        onClick={() => {
-          modal.info(config());
-        }}
+        onClick={() => setConfigVisible(true)}
       />
     );
   }
   return (
     <React.Fragment>
-      <ReachableContext.Provider value={{ manifest: manifest }}>
-        {contextHolder}
-      </ReachableContext.Provider>
+      {manifest.config && (
+        <Modal
+          open={configVisible}
+          onCancel={() => setConfigVisible(false)}
+          footer={null}
+          width={800}
+          destroyOnClose
+        >
+          <ExtensionConfigForm manifest={manifest} />
+        </Modal>
+      )}
       <Card
         className={className}
         actions={actions}
