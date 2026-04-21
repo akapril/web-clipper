@@ -98,11 +98,11 @@ const Preference: React.FC<PageProps> = ({
 
   return (
     <CenterContainer>
-      <div className={styles.mainContent} style={{ background: token.colorBgContainer, borderColor: token.colorBorder }}>
+      <div className={styles.mainContent} style={{ background: token.colorBgContainer, borderColor: token.colorBorder, color: token.colorText }}>
         <div onClick={goHome} className={styles.closeIcon} style={{ color: token.colorTextSecondary }}>
           <CloseOutlined />
         </div>
-        <div style={{ display: 'flex', height: '100%' }}>
+        <div style={{ display: 'flex', height: '100%', color: token.colorText }}>
           {/* 左侧菜单 */}
           <div className={styles.menuList} style={{ borderColor: token.colorBorderSecondary }}>
             {tabs.map(tab => {
