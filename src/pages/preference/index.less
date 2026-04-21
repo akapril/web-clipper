@@ -1,15 +1,10 @@
 .mainContent {
   width: 960px;
   height: 600px;
-  padding: 8px;
   position: relative;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
   border-radius: 10px;
-  :global {
-    .ant-tabs-content {
-      height: 100%;
-    }
-  }
+  overflow: hidden;
 }
 
 .closeIcon {
@@ -21,8 +16,36 @@
   cursor: pointer;
 }
 
+/* 左侧菜单 */
+.menuList {
+  width: 160px;
+  min-width: 160px;
+  padding: 12px 8px;
+  border-right: 1px solid;
+  overflow-y: auto;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-bottom: 2px;
+  transition: background 0.15s;
+  user-select: none;
+}
+.menuItem:hover {
+  opacity: 0.85;
+}
+.menuItemActive {
+  font-weight: 500;
+}
+
+/* 右侧内容 */
 .tabPane {
+  flex: 1;
   padding: 20px;
-  height: 100%;
-  overflow-y: scroll;
+  overflow-y: auto;
 }

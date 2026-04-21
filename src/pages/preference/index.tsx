@@ -14,7 +14,7 @@ import {
   SettingOutlined,
 } from '@ant-design/icons';
 
-import { Tabs, Badge, message, theme } from 'antd';
+import { Badge, message, theme } from 'antd';
 import { FormattedMessage } from 'react-intl';
 import Base from './base';
 import { DvaRouterProps, GlobalStore } from '@/common/types';
@@ -29,9 +29,7 @@ import { useObserver } from 'mobx-react';
 const { Route } = router;
 
 const mapStateToProps = ({ account: { accounts } }: GlobalStore) => {
-  return {
-    accounts,
-  };
+  return { accounts };
 };
 type PageStateProps = ReturnType<typeof mapStateToProps>;
 
@@ -44,7 +42,6 @@ const tabs = [
   },
   {
     path: 'extensions',
-
     icon: <ToolOutlined />,
     title: <FormattedMessage id="preference.tab.extensions" defaultMessage="Extension" />,
     component: Extensions,
@@ -52,7 +49,6 @@ const tabs = [
   {
     path: 'imageHost',
     icon: <PictureOutlined />,
-
     title: <FormattedMessage id="preference.tab.imageHost" defaultMessage="ImageHost" />,
     component: ImageHosting,
   },
@@ -98,7 +94,6 @@ const Preference: React.FC<PageProps> = ({
   };
 
   const configService = Container.get(IConfigService);
-
   const isLatestVersion = useObserver(() => configService.isLatestVersion);
 
   return (
@@ -107,38 +102,35 @@ const Preference: React.FC<PageProps> = ({
         <div onClick={goHome} className={styles.closeIcon} style={{ color: token.colorTextSecondary }}>
           <CloseOutlined />
         </div>
-        <div style={{ height: '100%' }}>
-          <Tabs
-            activeKey={pathname}
-            tabPosition="left"
-            style={{ height: '100%' }}
-            onTabClick={(key) => {
-              if (key !== pathname) {
-                push(key);
-              }
-            }}
-            items={tabs.map(tab => {
+        <div style={{ display: 'flex', height: '100%' }}>
+          {/* 左侧菜单 */}
+          <div className={styles.menuList} style={{ borderColor: token.colorBorderSecondary }}>
+            {tabs.map(tab => {
               const path = `/preference/${tab.path}`;
+              const isActive = pathname === path;
               let label = (
-                <div style={{ width: 100 }}>
+                <div
+                  className={`${styles.menuItem} ${isActive ? styles.menuItemActive : ''}`}
+                  style={isActive ? { background: token.colorPrimaryBg, color: token.colorPrimary } : { color: token.colorText }}
+                  onClick={() => push(path)}
+                >
                   {tab.icon}
-                  {tab.title}
+                  <span style={{ marginLeft: 6 }}>{tab.title}</span>
                 </div>
               );
               if (!isLatestVersion && tab.path === 'base') {
-                label = <Badge dot>{label}</Badge>;
+                label = <Badge dot key={path}>{label}</Badge>;
               }
-              return {
-                key: path,
-                label,
-                children: (
-                  <div className={styles.tabPane}>
-                    <Route exact path={path} component={tab.component} />
-                  </div>
-                ),
-              };
+              return <React.Fragment key={path}>{label}</React.Fragment>;
             })}
-          />
+          </div>
+          {/* 右侧内容 */}
+          <div className={styles.tabPane}>
+            {tabs.map(tab => {
+              const path = `/preference/${tab.path}`;
+              return <Route exact key={path} path={path} component={tab.component} />;
+            })}
+          </div>
         </div>
       </div>
     </CenterContainer>
