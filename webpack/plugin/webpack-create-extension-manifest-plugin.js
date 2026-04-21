@@ -37,6 +37,8 @@ async function getChromeManifest() {
       service_worker: './background.js',
     },
     icons: {
+      16: 'icons/icon.png',
+      48: 'icons/icon.png',
       128: 'icons/icon.png',
     },
     commands: {
@@ -76,6 +78,8 @@ async function getFirefoxManifest() {
       scripts: ['chrome/background.js'],
     },
     icons: {
+      16: 'chrome/icons/icon.png',
+      48: 'chrome/icons/icon.png',
       128: 'chrome/icons/icon.png',
     },
     commands: {

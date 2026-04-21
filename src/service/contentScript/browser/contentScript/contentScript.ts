@@ -15,16 +15,45 @@ import { getResourcePath } from '@/common/getResource';
 
 const turndownService = new TurndownService({ codeBlockStyle: 'fenced' });
 turndownService.use(plugins);
-// 修复 #1310: HTTPS 页面中的 HTTP 图片链接转为 HTTPS
-turndownService.addRule('httpToHttpsImages', {
-  filter: (node) => node.nodeName === 'IMG' && !!(node as HTMLImageElement).src?.startsWith('http://'),
+// 修复 #1310 + #963: 图片 URL 完整保留（含查询参数），HTTP 转 HTTPS
+turndownService.addRule('robustImages', {
+  filter: 'img',
   replacement: (_content, node) => {
     const img = node as HTMLImageElement;
-    const src = img.src.replace(/^http:\/\//, 'https://');
-    const alt = img.alt || '';
+    let src = img.getAttribute('src') || '';
+    if (!src) return '';
+    // HTTP → HTTPS (#1310)
+    if (src.startsWith('http://')) {
+      src = src.replace(/^http:\/\//, 'https://');
+    }
+    // 对含特殊字符的 URL 用尖括号包裹，防止 markdown 解析截断 (#963)
+    const alt = (img.alt || '').replace(/[\[\]]/g, '');
+    if (src.includes('?') || src.includes('(') || src.includes(')')) {
+      return `![${alt}](<${src}>)`;
+    }
     return `![${alt}](${src})`;
   },
 });
+// 修复 #1081: 保留代码块中的注释，不被 Turndown 剥离
+turndownService.addRule('preserveCodeComments', {
+  filter: (node) => {
+    return node.nodeName === 'CODE' || node.nodeName === 'PRE';
+  },
+  replacement: (_content, node) => {
+    const el = node as HTMLElement;
+    const isBlock = el.nodeName === 'PRE' || el.querySelector('code');
+    const codeEl = el.nodeName === 'PRE' ? el.querySelector('code') || el : el;
+    const text = codeEl.textContent || '';
+    if (isBlock) {
+      // 检测语言类名
+      const langClass = (codeEl.className || '').match(/language-(\w+)/);
+      const lang = langClass ? langClass[1] : '';
+      return `\n\n\`\`\`${lang}\n${text}\n\`\`\`\n\n`;
+    }
+    return `\`${text}\``;
+  },
+});
+
 class ContentScriptService implements IContentScriptService {
   constructor(@Inject(IExtensionContainer) private extensionContainer: IExtensionContainer) {}
 
