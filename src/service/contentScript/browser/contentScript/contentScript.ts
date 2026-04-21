@@ -15,6 +15,16 @@ import { getResourcePath } from '@/common/getResource';
 
 const turndownService = new TurndownService({ codeBlockStyle: 'fenced' });
 turndownService.use(plugins);
+// 修复 #1310: HTTPS 页面中的 HTTP 图片链接转为 HTTPS
+turndownService.addRule('httpToHttpsImages', {
+  filter: (node) => node.nodeName === 'IMG' && !!(node as HTMLImageElement).src?.startsWith('http://'),
+  replacement: (_content, node) => {
+    const img = node as HTMLImageElement;
+    const src = img.src.replace(/^http:\/\//, 'https://');
+    const alt = img.alt || '';
+    return `![${alt}](${src})`;
+  },
+});
 class ContentScriptService implements IContentScriptService {
   constructor(@Inject(IExtensionContainer) private extensionContainer: IExtensionContainer) {}
 
