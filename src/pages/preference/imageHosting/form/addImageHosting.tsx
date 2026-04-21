@@ -15,10 +15,6 @@ type PageOwnProps = {
   onCancel(): void;
 };
 
-const formItemLayout = {
-  wrapperCol: { span: 17 },
-  labelCol: { span: 6, offset: 0 },
-};
 
 const AddImageHostingModal: React.FC<PageOwnProps> = props => {
   const { imageHostingServicesMeta, visible, currentImageHosting } = props;
@@ -70,8 +66,10 @@ const AddImageHostingModal: React.FC<PageOwnProps> = props => {
   }
 
   return (
-    <Modal title={title} open={visible} onOk={handleOk} onCancel={props.onCancel} destroyOnClose width={560}>
-      <Form form={form} {...formItemLayout} initialValues={initValues}>
+    <Modal title={title} open={visible} onOk={handleOk} onCancel={props.onCancel} destroyOnClose width={560}
+      styles={{ body: { maxHeight: '60vh', overflowY: 'auto' } }}
+    >
+      <Form form={form} layout="vertical" initialValues={initValues}>
         <Form.Item
           name="type"
           label={<FormattedMessage id="preference.imageHosting.type" defaultMessage="Type" />}

@@ -92,6 +92,7 @@ const Page: React.FC<PageOwnProps> = ({
       onCancel={onCancel}
       destroyOnClose
       width={560}
+      styles={{ body: { maxHeight: '60vh', overflowY: 'auto' } }}
       onOk={() => {
         if (verified) {
           const values = form.getFieldsValue();

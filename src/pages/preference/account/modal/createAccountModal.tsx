@@ -103,6 +103,7 @@ const Page: React.FC<PageOwnProps> = ({
       title={<ModalTitle />}
       destroyOnClose
       width={560}
+      styles={{ body: { maxHeight: '60vh', overflowY: 'auto' } }}
     >
       <Form form={form} layout="vertical" initialValues={{ type }}>
         <Form.Item

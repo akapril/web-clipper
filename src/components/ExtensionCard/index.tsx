@@ -221,6 +221,7 @@ const ExtensionCard: React.FC<ExtensionCardProps> = ({ manifest, actions, classN
           footer={null}
           width={800}
           destroyOnClose
+          styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}
         >
           <ExtensionConfigForm manifest={manifest} />
         </Modal>
