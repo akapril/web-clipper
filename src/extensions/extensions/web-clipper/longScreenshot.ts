@@ -1,27 +1,43 @@
-import { TextExtension } from '@/extensions/common';
-import { IContentScriptService } from '@/service/common/contentScript';
-import { ITabService } from '@/service/common/tab';
-import Container from 'typedi';
+import { TextExtension } from '../../common';
 
 /** run() 返回的页面尺寸数据 */
 interface PageDimensions {
-  /** 页面完整高度 */
   totalHeight: number;
-  /** 页面完整宽度 */
   totalWidth: number;
-  /** 视口高度 */
   viewportHeight: number;
-  /** 视口宽度 */
   viewportWidth: number;
-  /** 设备像素比 */
   dpi: number;
+  tabId: number;
+}
+
+/**
+ * 通过 chrome.tabs.sendMessage 让 content script 滚动页面
+ */
+async function scrollPage(tabId: number, x: number, y: number): Promise<void> {
+  try {
+    await chrome.tabs.sendMessage(tabId, {
+      uuid: 'contentScript',
+      command: 'scrollPage',
+      arg: [x, y],
+    });
+  } catch (_e) {
+    // 回退：直接执行脚本滚动
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        func: (sx: number, sy: number) => window.scrollTo(sx, sy),
+        args: [x, y],
+      });
+      await new Promise(r => setTimeout(r, 350));
+    } catch (_e2) {}
+  }
 }
 
 export default new TextExtension<PageDimensions>(
   {
     name: 'Long Screenshot',
     icon: 'picture',
-    version: '0.0.1',
+    version: '0.0.2',
     i18nManifest: {
       'zh-CN': { name: '长截图', description: '截取整个页面的长图' },
       'en-US': { name: 'Long Screenshot', description: 'Capture full page as a long screenshot' },
@@ -30,7 +46,6 @@ export default new TextExtension<PageDimensions>(
   {
     run: async (context) => {
       const { toggleClipper } = context;
-      // 隐藏剪藏UI避免遮挡截图
       toggleClipper();
 
       const totalHeight = Math.max(
@@ -45,73 +60,68 @@ export default new TextExtension<PageDimensions>(
       const viewportWidth = window.innerWidth;
       const dpi = window.devicePixelRatio || 1;
 
-      // 先滚动到顶部
       window.scrollTo(0, 0);
       await new Promise((r) => setTimeout(r, 200));
 
-      return { totalHeight, totalWidth, viewportHeight, viewportWidth, dpi };
+      // 获取当前 tab ID
+      const tab = await new Promise<chrome.tabs.Tab>((resolve) => {
+        chrome.runtime.sendMessage({ type: 'getCurrentTab' }, resolve);
+      }).catch(() => null);
+
+      return {
+        totalHeight, totalWidth, viewportHeight, viewportWidth, dpi,
+        tabId: (tab as any)?.id || 0,
+      };
     },
 
     afterRun: async (context) => {
       const { result, loadImage, captureVisibleTab, imageService } = context;
-      const { totalHeight, totalWidth, viewportHeight, viewportWidth, dpi } = result;
+      const { totalHeight, viewportHeight, viewportWidth, dpi } = result;
 
-      // 通过 IPC 获取内容脚本服务（用于滚动页面）和标签服务
-      const contentScriptService = Container.get(IContentScriptService);
+      // 获取当前 tab ID 用于滚动
+      const currentTab = await new Promise<any>((resolve) => {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => resolve(tabs[0]));
+      }).catch(() => null);
+      const tabId = currentTab?.id || result.tabId;
 
-      // 计算需要滚动的位置
+      if (!tabId) {
+        context.message.error('无法获取当前标签页');
+        return context.data || '';
+      }
+
       const scrollPositions: number[] = [];
       for (let y = 0; y < totalHeight; y += viewportHeight) {
         scrollPositions.push(y);
       }
 
-      // 创建完整画布
       const canvas = document.createElement('canvas');
       canvas.width = viewportWidth * dpi;
       canvas.height = totalHeight * dpi;
       const ctx = canvas.getContext('2d')!;
 
-      // 逐段滚动、截图、绘制到画布
       for (let i = 0; i < scrollPositions.length; i++) {
         const scrollY = scrollPositions[i];
 
-        // 通过 IPC 通知内容脚本滚动页面
-        await contentScriptService.scrollPage(0, scrollY);
+        await scrollPage(tabId, 0, scrollY);
 
-        // 截取当前可见区域
         const base64Capture = await captureVisibleTab();
         const img = await loadImage(base64Capture);
 
-        // 计算本段在画布上的绘制位置和高度
         const drawY = scrollY * dpi;
-        // 最后一段可能不足一个视口高度，需要特殊处理
         const remainingHeight = totalHeight - scrollY;
         const segmentHeight = Math.min(viewportHeight, remainingHeight);
 
         if (segmentHeight < viewportHeight) {
-          // 最后一段：只取截图底部对应的部分
           const srcY = (viewportHeight - segmentHeight) * dpi;
-          ctx.drawImage(
-            img,
-            0,
-            srcY,
-            img.width,
-            segmentHeight * dpi,
-            0,
-            drawY,
-            img.width,
-            segmentHeight * dpi
-          );
+          ctx.drawImage(img, 0, srcY, img.width, segmentHeight * dpi, 0, drawY, img.width, segmentHeight * dpi);
         } else {
-          // 正常段：整个截图绘制
           ctx.drawImage(img, 0, 0, img.width, img.height, 0, drawY, img.width, img.height);
         }
       }
 
       // 滚回顶部
-      await contentScriptService.scrollPage(0, 0);
+      await scrollPage(tabId, 0, 0);
 
-      // 导出画布为 data URL
       const dataUrl = canvas.toDataURL('image/png');
 
       // 有图床时上传
@@ -119,11 +129,9 @@ export default new TextExtension<PageDimensions>(
         try {
           const url = await imageService.uploadImage({ data: dataUrl });
           return `![](${url})\n\n`;
-        } catch (_e) {
-          // 上传失败时回退
-        }
+        } catch (_e) {}
       }
-      // 无图床或上传失败：下载图片文件
+      // 无图床或上传失败：下载文件
       const { createAndDownloadFile } = context;
       const timestamp = Date.now();
       const fileName = `long-screenshot-${timestamp}.png`;
